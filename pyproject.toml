@@ -1,0 +1,93 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pr-change-tracker"
+dynamic = ["version"]
+description = "Server side for tracking changes to github PRs"
+readme = "README.rst"
+license = { text = "MIT" }
+requires-python = ">= 3.13"
+authors = [
+    { name = "Stephen Moore", email = "stephen@delfick.com" },
+]
+classifiers = [
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.13",
+  "Typing :: Typed",
+]
+dependencies =  [
+    "attrs >= 26.1.0",
+    "cattrs >= 26.1.0",
+    "sanic >= 25.12.0",
+    "aiohttp >=3, <4",
+    "hypercorn >= 0.18.0",
+    "structlog >= 25.5.0",
+    "SQLAlchemy[postgresql_psycopg] >= 2.0.49",
+    "alembic >= 1.18.4",
+    "greenlet >= 3.4.0",
+]
+
+[project.urls]
+repository = "https://github.com/delfick/pr-change-tracker"
+
+[project.scripts]
+pr-change-tracker = "pr_change_tracker.cli:main"
+
+[dependency-groups]
+dev = [
+    "tools",
+    "pr_change_tracker_test_driver",
+]
+
+[project.optional-dependencies]
+tools = [
+    "tools",
+    "pr_change_tracker_test_driver",
+]
+
+[tool.uv.sources]
+tools = { workspace = true }
+pr-change-tracker-test-driver = { workspace = true }
+
+[tool.uv.workspace]
+members = ["tools", "helpers"]
+
+[tool.hatch.version]
+path = "pr_change_tracker/version.py"
+
+[tool.hatch.build.targets.wheel]
+include = [
+    "/pr_change_tracker",
+]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 99
+extend-exclude = [
+    ".DS_Store",
+    ".pytest_cache",
+    "tools/.python",
+    "tools/deps",
+    "__pycache__",
+]
+
+[tool.ruff.lint]
+select = [
+    "B008",  # mutable objects as function argument defaults
+    "B015",  # flake8-bugbear (useless-comparison)
+    "I",  # isort
+    "T20",  # flake8-print
+    "UP",  # pyupgrade
+    "RUF",
+    "F",
+]
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = [
+    "F401",     # https://docs.astral.sh/ruff/rules/unused-import/
+]

@@ -1,0 +1,23 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pr-change-tracker-test-driver"
+dynamic = ["version"]
+license = { text = "MIT" }
+authors = [
+    { name = "Stephen Moore", email = "stephen@delfick.com" },
+]
+dependencies = [
+    "pytest==9.0.3",
+    "mypy==1.20.1",
+]
+
+[tool.hatch.version]
+path = "pr_change_tracker_test_driver/version.py"
+
+[tool.hatch.build.targets.wheel]
+include = [
+    "/pr_change_tracker_test_driver",
+]
