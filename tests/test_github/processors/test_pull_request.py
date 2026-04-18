@@ -29,7 +29,14 @@ class PerTestLogic:
     class Senders:
         delfick = _common.Sender(id=109301, login="delfick")
 
-    def assertFixture(self, fixture_name: str, *events: object) -> None:
+    def assertFixture(self, fixture_name: str, event: object | None, *events: object) -> None:
+        if event is None:
+            assert len(events) == 0
+            events = ()
+        else:
+            assert not any(event is None for event in events)
+            events = (event, *events)
+
         incoming = self._hook_fixtures.incoming_from_fixture(fixture_name)
         processor = github_handlers.IncomingProcessor(storage=self.storage)
         assert list(processor.process(incoming)) == list(events)
@@ -104,7 +111,30 @@ class TestPullRequestEvents:
             )
 
     class TestEditedAction:
-        pass
+        def test_edited_base(self, test_logic: PerTestLogic) -> None:
+            test_logic.assertFixture(
+                "edited-base",
+                _pull_request._BaseChangedEvent(
+                    storage=test_logic.storage,
+                    timestamps=comparators.IsInstance.using(_common.Timestamps),
+                    sender=test_logic.Senders.delfick,
+                    head_and_base=_common.HeadAndBase(
+                        head_ref="change-file",
+                        head_sha="02ebe652bf359cadb5f96375ce9b21637cdbc1eb",
+                        base_ref="change-file-prior",
+                        base_sha="ce3858babcbf3c57458164e468ac0e9de9016e9d",
+                    ),
+                    pull_request=attrs.evolve(
+                        test_logic.pull_request, pr_number=4, branch_name="change-file"
+                    ),
+                ),
+            )
+
+        def test_edited_body(self, test_logic: PerTestLogic) -> None:
+            test_logic.assertFixture("edited-body", None)
+
+        def test_edited_title(self, test_logic: PerTestLogic) -> None:
+            test_logic.assertFixture("edited-title", None)
 
     class TestOpened:
         def test_opened(self, test_logic: PerTestLogic) -> None:

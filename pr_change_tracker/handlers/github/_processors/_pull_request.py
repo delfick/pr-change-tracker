@@ -24,6 +24,13 @@ class _Pointers:
         "/pull_request/merge_commit_sha"
     )
 
+    changed_base_ref: ClassVar[jsonpath.JSONPointer] = jsonpath.JSONPointer(
+        "/changes/base/ref/from"
+    )
+    changed_base_sha: ClassVar[jsonpath.JSONPointer] = jsonpath.JSONPointer(
+        "/changes/base/sha/from"
+    )
+
 
 @attrs.frozen
 class _MergedEvent(PullRequestEvent):
@@ -70,7 +77,7 @@ class _ConvertedToDraftEvent(PullRequestEvent):
 
 
 @attrs.frozen
-class _EditedEvent(PullRequestEvent):
+class _BaseChangedEvent(PullRequestEvent):
     _storage: storage.CommonStorage
 
     pull_request: _common.PullRequest
@@ -174,13 +181,26 @@ class PullRequestProcessor:
                 )
 
             case "edited":
-                yield _EditedEvent(
-                    storage=self._storage,
-                    pull_request=_common.PullRequest.from_data(incoming.body),
-                    timestamps=_common.Timestamps.from_data(incoming.body),
-                    sender=_common.Sender.from_data(incoming.body),
-                    head_and_base=_common.HeadAndBase.from_data(incoming.body),
-                )
+                changed_base_ref = _Pointers.changed_base_ref.resolve(incoming.body, default=None)
+                changed_base_sha = _Pointers.changed_base_sha.resolve(incoming.body, default=None)
+                head_and_base = _common.HeadAndBase.from_data(incoming.body)
+
+                if (
+                    changed_base_ref is not None
+                    and changed_base_sha is not None
+                    and (changed_base_ref, changed_base_sha)
+                    != (
+                        head_and_base.base_ref,
+                        head_and_base.base_sha,
+                    )
+                ):
+                    yield _BaseChangedEvent(
+                        storage=self._storage,
+                        pull_request=_common.PullRequest.from_data(incoming.body),
+                        timestamps=_common.Timestamps.from_data(incoming.body),
+                        sender=_common.Sender.from_data(incoming.body),
+                        head_and_base=head_and_base,
+                    )
 
             case "opened":
                 yield _OpenedEvent(
