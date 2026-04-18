@@ -38,12 +38,12 @@ class _Review:
     review_id: int
     submitted_at: datetime.datetime
     commit_id: str
-    state: Literal["changes_requested", "approved"]
+    state: Literal["changes_requested", "approved", "dismissed"]
 
     @classmethod
     def from_data(cls, data: Mapping[str, object]) -> Self | None:
         match state := _Pointers.review_state.resolve(data):
-            case "changes_requested" | "approved":
+            case "changes_requested" | "approved" | "dismissed":
                 return cls(
                     review_id=_as_int(_Pointers.review_id.resolve(data)),
                     submitted_at=datetime.datetime.fromisoformat(
@@ -58,19 +58,7 @@ class _Review:
 
 
 @attrs.frozen
-class _DismissedEvent(PullRequestReviewEvent):
-    _storage: storage.CommonStorage
-
-    pull_request: _common.PullRequest
-    timestamps: _common.Timestamps
-    sender: _common.Sender
-
-    def process(self) -> None:
-        pass
-
-
-@attrs.frozen
-class _SubmittedEvent(PullRequestReviewEvent):
+class _ReviewChangedEvent(PullRequestReviewEvent):
     _storage: storage.CommonStorage
 
     pull_request: _common.PullRequest
@@ -88,18 +76,10 @@ class PullRequestReviewProcessor:
 
     def process(self, incoming: github_handlers.Incoming) -> Iterator[PullRequestReviewEvent]:
         match incoming.action:
-            case "dismissed":
-                yield _DismissedEvent(
-                    storage=self._storage,
-                    pull_request=_common.PullRequest.from_data(incoming.body),
-                    timestamps=_common.Timestamps.from_data(incoming.body),
-                    sender=_common.Sender.from_data(incoming.body),
-                )
-
-            case "submitted":
+            case "dismissed" | "submitted":
                 review = _Review.from_data(incoming.body)
                 if review is not None:
-                    yield _SubmittedEvent(
+                    yield _ReviewChangedEvent(
                         storage=self._storage,
                         review=review,
                         pull_request=_common.PullRequest.from_data(incoming.body),

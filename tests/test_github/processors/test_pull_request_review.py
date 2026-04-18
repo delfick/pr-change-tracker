@@ -53,8 +53,14 @@ class TestPullRequestReviewEvents:
         def test_dismissed_collab(self, test_logic: PerTestLogic) -> None:
             test_logic.assertFixture(
                 "dismissed-collab",
-                _pull_request_review._DismissedEvent(
+                _pull_request_review._ReviewChangedEvent(
                     storage=test_logic.storage,
+                    review=_pull_request_review._Review(
+                        review_id=2431185757,
+                        submitted_at=datetime.datetime.fromisoformat("2024-11-13T00:14:56Z"),
+                        commit_id="20be90fb76987ea58ad9c7698bf06658b45178d1",
+                        state="dismissed",
+                    ),
                     timestamps=comparators.IsInstance.using(_common.Timestamps),
                     sender=test_logic.Senders.kcollasarundell,
                     pull_request=attrs.evolve(
@@ -66,8 +72,14 @@ class TestPullRequestReviewEvents:
         def test_dismissed_owner(self, test_logic: PerTestLogic) -> None:
             test_logic.assertFixture(
                 "dismissed-owner",
-                _pull_request_review._DismissedEvent(
+                _pull_request_review._ReviewChangedEvent(
                     storage=test_logic.storage,
+                    review=_pull_request_review._Review(
+                        review_id=2431217782,
+                        submitted_at=datetime.datetime.fromisoformat("2024-11-13T00:28:41Z"),
+                        commit_id="20be90fb76987ea58ad9c7698bf06658b45178d1",
+                        state="dismissed",
+                    ),
                     timestamps=comparators.IsInstance.using(_common.Timestamps),
                     sender=test_logic.Senders.delfick,
                     pull_request=attrs.evolve(
@@ -80,7 +92,7 @@ class TestPullRequestReviewEvents:
         def test_submitted_approve(self, test_logic: PerTestLogic) -> None:
             test_logic.assertFixture(
                 "submitted-approve",
-                _pull_request_review._SubmittedEvent(
+                _pull_request_review._ReviewChangedEvent(
                     storage=test_logic.storage,
                     review=_pull_request_review._Review(
                         review_id=2431221502,
@@ -99,7 +111,7 @@ class TestPullRequestReviewEvents:
         def test_submitted_changes_requested_collab(self, test_logic: PerTestLogic) -> None:
             test_logic.assertFixture(
                 "submitted-changes_requested-collab",
-                _pull_request_review._SubmittedEvent(
+                _pull_request_review._ReviewChangedEvent(
                     storage=test_logic.storage,
                     review=_pull_request_review._Review(
                         review_id=2431185757,
