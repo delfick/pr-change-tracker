@@ -8,6 +8,8 @@ import attrs
 from pr_change_tracker import storage
 from pr_change_tracker.handlers import github as github_handlers
 
+from . import _common
+
 
 class PullRequestReviewEvent(abc.ABC):
     @abc.abstractmethod
@@ -16,12 +18,16 @@ class PullRequestReviewEvent(abc.ABC):
 
 @attrs.frozen
 class _DismissedEvent(PullRequestReviewEvent):
+    pull_request: _common.PullRequest
+
     def process(self) -> None:
         pass
 
 
 @attrs.frozen
 class _SubmittedEvent(PullRequestReviewEvent):
+    pull_request: _common.PullRequest
+
     def process(self) -> None:
         pass
 
@@ -33,10 +39,14 @@ class PullRequestReviewProcessor:
     def process(self, incoming: github_handlers.Incoming) -> Iterator[PullRequestReviewEvent]:
         match incoming.action:
             case "dismissed":
-                yield _DismissedEvent()
+                yield _DismissedEvent(
+                    pull_request=_common.PullRequest.from_data(incoming.body),
+                )
 
             case "submitted":
-                yield _SubmittedEvent()
+                yield _SubmittedEvent(
+                    pull_request=_common.PullRequest.from_data(incoming.body),
+                )
 
             case "edited":
                 # Don't care for edited

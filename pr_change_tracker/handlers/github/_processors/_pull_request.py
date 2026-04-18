@@ -8,6 +8,8 @@ import attrs
 from pr_change_tracker import storage
 from pr_change_tracker.handlers import github as github_handlers
 
+from . import _common
+
 
 class PullRequestEvent(abc.ABC):
     @abc.abstractmethod
@@ -16,42 +18,56 @@ class PullRequestEvent(abc.ABC):
 
 @attrs.frozen
 class _ClosedEvent(PullRequestEvent):
+    pull_request: _common.PullRequest
+
     def process(self) -> None:
         pass
 
 
 @attrs.frozen
 class _ConvertedToDraftEvent(PullRequestEvent):
+    pull_request: _common.PullRequest
+
     def process(self) -> None:
         pass
 
 
 @attrs.frozen
 class _EditedEvent(PullRequestEvent):
+    pull_request: _common.PullRequest
+
     def process(self) -> None:
         pass
 
 
 @attrs.frozen
 class _OpenedEvent(PullRequestEvent):
+    pull_request: _common.PullRequest
+
     def process(self) -> None:
         pass
 
 
 @attrs.frozen
 class _ReadyForReviewEvent(PullRequestEvent):
+    pull_request: _common.PullRequest
+
     def process(self) -> None:
         pass
 
 
 @attrs.frozen
 class _ReopendEvent(PullRequestEvent):
+    pull_request: _common.PullRequest
+
     def process(self) -> None:
         pass
 
 
 @attrs.frozen
 class _SynchronizeEvent(PullRequestEvent):
+    pull_request: _common.PullRequest
+
     def process(self) -> None:
         pass
 
@@ -63,25 +79,39 @@ class PullRequestProcessor:
     def process(self, incoming: github_handlers.Incoming) -> Iterator[PullRequestEvent]:
         match incoming.action:
             case "closed":
-                yield _ClosedEvent()
+                yield _ClosedEvent(
+                    pull_request=_common.PullRequest.from_data(incoming.body),
+                )
 
             case "converted_to_draft":
-                yield _ConvertedToDraftEvent()
+                yield _ConvertedToDraftEvent(
+                    pull_request=_common.PullRequest.from_data(incoming.body),
+                )
 
             case "edited":
-                yield _EditedEvent()
+                yield _EditedEvent(
+                    pull_request=_common.PullRequest.from_data(incoming.body),
+                )
 
             case "opened":
-                yield _OpenedEvent()
+                yield _OpenedEvent(
+                    pull_request=_common.PullRequest.from_data(incoming.body),
+                )
 
             case "ready_for_review":
-                yield _ReadyForReviewEvent()
+                yield _ReadyForReviewEvent(
+                    pull_request=_common.PullRequest.from_data(incoming.body),
+                )
 
             case "reopened":
-                yield _ReopendEvent()
+                yield _ReopendEvent(
+                    pull_request=_common.PullRequest.from_data(incoming.body),
+                )
 
             case "synchronize":
-                yield _SynchronizeEvent()
+                yield _SynchronizeEvent(
+                    pull_request=_common.PullRequest.from_data(incoming.body),
+                )
 
             # We don't care about these actions
             case "assigned":

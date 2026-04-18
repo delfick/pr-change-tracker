@@ -31,6 +31,7 @@ dependencies =  [
     "SQLAlchemy[postgresql_psycopg] >= 2.0.49",
     "alembic >= 1.18.4",
     "greenlet >= 3.4.0",
+    "python-jsonpath >= 2.0.2",
 ]
 
 [project.urls]
