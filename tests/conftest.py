@@ -1,8 +1,10 @@
+import pathlib
 from collections.abc import AsyncGenerator
 
 import pytest
 import sqlalchemy
 import structlog
+from pr_change_tracker_test_driver import fixtures as fixture_helpers
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -16,6 +18,11 @@ from pr_change_tracker.storage import metadata
 
 def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption("--postgres-url", help="url of the database to use for tests", required=True)
+
+
+hook_fixtures = fixture_helpers.HookFixtures.as_fixture(
+    fixture_folder=pathlib.Path(__file__).parent / "fixtures" / "github"
+)
 
 
 @pytest.fixture(scope="session", autouse=True)

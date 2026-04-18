@@ -1,8 +1,8 @@
 import datetime
 import hmac
 import json
-from collections.abc import Callable
-from typing import Protocol, TypedDict
+from collections.abc import Callable, Iterator
+from typing import Protocol
 
 import attrs
 import sanic
@@ -12,16 +12,12 @@ from pr_change_tracker.protocols import Logger
 from .. import github
 
 
-class _RawHeaders(TypedDict):
-    delivery: str
-    event: str
-    hook_id: str
-    hook_installation_target_id: str
-    hook_installation_target_type: str
+class _WithProcess(Protocol):
+    def process(self) -> None: ...
 
 
 class IncomingProcessor(Protocol):
-    def __call__(self, incoming: github.Incoming, /) -> None: ...
+    def __call__(self, incoming: github.Incoming, /) -> Iterator[_WithProcess]: ...
 
 
 class ExpectedSignatureDeterminer(Protocol):
@@ -92,28 +88,16 @@ class GithubWebhook:
             return sanic.empty(500)
 
         try:
-            raw_headers: _RawHeaders = {
-                "delivery": request.headers["x-github-delivery"],
-                "event": request.headers["x-github-event"],
-                "hook_id": request.headers["x-github-hook-id"],
-                "hook_installation_target_id": (
-                    request.headers["x-github-hook-installation-target-id"]
-                ),
-                "hook_installation_target_type": (
-                    request.headers["x-github-hook-installation-target-type"]
-                ),
-            }
-        except KeyError:
-            return sanic.empty(400)
-
-        if not all(raw_headers.values()):
+            incoming = github.Incoming.from_http_request(
+                headers=request.headers, body=body, logger=logger
+            )
+        except github.UnexpectedEmptyHeader:
             logger.error("Webhook has unexpected empty values")
             return sanic.empty(400)
 
-        incoming = github.Incoming(body=body, logger=logger, **raw_headers)
-
         try:
-            self._process_incoming(incoming)
+            for event in self._process_incoming(incoming):
+                event.process()
         except github.GithubWebhookDropped as e:
             logger.info("Event dropped", reason=e.reason)
             return sanic.empty()

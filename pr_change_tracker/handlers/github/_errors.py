@@ -9,3 +9,8 @@ class GithubWebhookError(Exception):
 @attrs.define(kw_only=True)
 class GithubWebhookDropped(Exception):
     reason: str
+
+
+@attrs.frozen
+class UnexpectedEmptyHeader(Exception):
+    name: str
