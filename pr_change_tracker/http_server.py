@@ -21,6 +21,7 @@ from .handlers import sanic as sanic_handlers
 class ServerBase[T_SanicConfig: sanic.Config, T_SanicNamespace]:
     postgres_url: str
     github_webhook_secret: str
+    debug_github_webhook_secret: str | None
     port: int
     logger: protocols.Logger
 
@@ -71,6 +72,17 @@ class ServerBase[T_SanicConfig: sanic.Config, T_SanicNamespace]:
         @app.post("/github/webhook", name="github_webhook")
         async def github_webhook(request: sanic.Request) -> sanic.response.HTTPResponse:
             return await github_handler.handle(request)
+
+        debug_github_webhook_secret = self.debug_github_webhook_secret
+        if debug_github_webhook_secret:
+
+            @app.post("/debug/print_hook", name="debug_print_hook")
+            async def github_webhook(request: sanic.Request) -> sanic.response.HTTPResponse:
+                return await sanic_handlers.print_hook(
+                    request,
+                    printer=print,
+                    debug_github_webhook_secret=debug_github_webhook_secret,
+                )
 
         return app
 

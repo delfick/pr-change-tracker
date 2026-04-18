@@ -77,6 +77,7 @@ def setup_logging(dev_logging: bool) -> protocols.Logger:
 def start_http_server(
     *,
     github_webhook_secret: str,
+    debug_github_webhook_secret: str | None,
     postgres_url: str,
     port: int,
     dev_logging: bool,
@@ -86,6 +87,7 @@ def start_http_server(
     server = server_kls(
         postgres_url=postgres_url,
         github_webhook_secret=github_webhook_secret,
+        debug_github_webhook_secret=debug_github_webhook_secret,
         port=port,
         logger=logger,
     )
@@ -98,6 +100,11 @@ def http_server_args[**P_Args, T_Ret](func: Callable[P_Args, T_Ret]) -> Callable
         help="The value of the secret for the github webhooks or 'env:NAME_OF_ENV_VAR'",
         default="env:GITHUB_WEBHOOK_SECRET",
         type=EnvSecret(),
+    )
+    @click.option(
+        "--provide-git-webhook-debug-endpoint",
+        help="Used to enable an endpoint to print out full incoming http requests from the github webhook for test fixtures",
+        is_flag=True,
     )
     @click.option(
         "--postgres-url",
@@ -128,12 +135,18 @@ def http_server_args[**P_Args, T_Ret](func: Callable[P_Args, T_Ret]) -> Callable
 def serve_http(
     *,
     github_webhook_secret: str,
+    provide_git_webhook_debug_endpoint: bool,
     postgres_url: str,
     port: int,
     dev_logging: bool,
 ) -> None:
     return start_http_server(
         github_webhook_secret=github_webhook_secret,
+        debug_github_webhook_secret=(
+            "b7e854dc539ed48f9f03ad01ed59f199d29922bd1959d75368"
+            if provide_git_webhook_debug_endpoint
+            else None
+        ),
         postgres_url=postgres_url,
         port=port,
         dev_logging=dev_logging,

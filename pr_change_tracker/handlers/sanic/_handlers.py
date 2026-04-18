@@ -1,4 +1,7 @@
+import datetime
 import hmac
+import json
+from collections.abc import Callable
 from typing import Protocol, TypedDict
 
 import attrs
@@ -23,6 +26,31 @@ class IncomingProcessor(Protocol):
 
 class ExpectedSignatureDeterminer(Protocol):
     def __call__(self, body: bytes) -> str: ...
+
+
+async def print_hook(
+    request: sanic.Request,
+    *,
+    debug_github_webhook_secret: str,
+    printer: Callable[[str], None],
+) -> sanic.response.HTTPResponse:
+    printer("!!!!!!!!! START RECEIVED HOOK")
+    printer("")
+
+    printer(f"- {datetime.datetime.now(datetime.UTC).isoformat()}")
+    printer(f"- {debug_github_webhook_secret}")
+    printer("")
+
+    for name, value in sorted(request.headers.items()):
+        printer(f":{name}: {value}")
+    printer("")
+
+    for line in json.dumps(request.json, indent="  ", sort_keys=True).split("\n"):
+        printer(line)
+
+    printer("")
+    printer("!!!!!!!!! END RECEIVED HOOK")
+    return sanic.empty(200)
 
 
 @attrs.frozen
