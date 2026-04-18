@@ -98,7 +98,7 @@ def http_server_args[**P_Args, T_Ret](func: Callable[P_Args, T_Ret]) -> Callable
     @click.option(
         "--github-webhook-secret",
         help="The value of the secret for the github webhooks or 'env:NAME_OF_ENV_VAR'",
-        default="env:GITHUB_WEBHOOK_SECRET",
+        default="env:PR_CHANGE_TRACKER_GITHUB_WEBHOOK_SECRET",
         type=EnvSecret(),
     )
     @click.option(
@@ -109,7 +109,7 @@ def http_server_args[**P_Args, T_Ret](func: Callable[P_Args, T_Ret]) -> Callable
     @click.option(
         "--postgres-url",
         help="The url for the postgres database",
-        default="env:ALEMBIC_DB_URL",
+        default="env:PR_CHANGE_TRACKER_ALEMBIC_DB_URL",
         type=EnvSecret(),
     )
     @click.option(

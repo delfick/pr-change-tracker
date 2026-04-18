@@ -2,7 +2,6 @@ import datetime
 
 import attrs
 import pytest
-from pr_change_tracker_test_driver import comparators
 from pr_change_tracker_test_driver import fixtures as fixture_helpers
 from pr_change_tracker_test_driver import storage as storage_helpers
 
@@ -23,6 +22,7 @@ class PerTestLogic:
             branch_name="",
             repo_name="test-for-github-webhooks",
             org="delfick",
+            updated_at=datetime.datetime.now(),
         )
     )
 
@@ -52,9 +52,8 @@ class TestPullRequestEvents:
         def test_closed_merged(self, test_logic: PerTestLogic) -> None:
             test_logic.assertFixture(
                 "closed-merged",
-                _pull_request._MergedEvent(
+                _pull_request._StatusChangeEvent(
                     storage=test_logic.storage,
-                    timestamps=comparators.IsInstance.using(_common.Timestamps),
                     sender=test_logic.Senders.delfick,
                     head_and_base=_common.HeadAndBase(
                         head_ref="test1",
@@ -63,19 +62,21 @@ class TestPullRequestEvents:
                         base_sha="f2c691ea3431993ae49dcdd32b81a89c7859c4ec",
                     ),
                     pull_request=attrs.evolve(
-                        test_logic.pull_request, pr_number=1, branch_name="test1"
+                        test_logic.pull_request,
+                        pr_number=1,
+                        branch_name="test1",
+                        updated_at=datetime.datetime.fromisoformat("2024-11-13T00:31:15Z"),
                     ),
-                    merge_commit_sha="c41709e060bc496d3cd7df1d5ee339d0b223527b",
-                    merged_at=datetime.datetime.fromisoformat("2024-11-13T00:31:15Z"),
+                    occurred_at=datetime.datetime.fromisoformat("2024-11-13T00:31:15Z"),
+                    status=storage.PullRequestStatus.MERGED,
                 ),
             )
 
         def test_closed_nomerge(self, test_logic: PerTestLogic) -> None:
             test_logic.assertFixture(
                 "closed-nomerge",
-                _pull_request._ClosedEvent(
+                _pull_request._StatusChangeEvent(
                     storage=test_logic.storage,
-                    timestamps=comparators.IsInstance.using(_common.Timestamps),
                     sender=test_logic.Senders.delfick,
                     head_and_base=_common.HeadAndBase(
                         head_ref="revert-1-test1",
@@ -84,9 +85,13 @@ class TestPullRequestEvents:
                         base_sha="c41709e060bc496d3cd7df1d5ee339d0b223527b",
                     ),
                     pull_request=attrs.evolve(
-                        test_logic.pull_request, pr_number=2, branch_name="revert-1-test1"
+                        test_logic.pull_request,
+                        pr_number=2,
+                        branch_name="revert-1-test1",
+                        updated_at=datetime.datetime.fromisoformat("2024-11-13T00:32:58Z"),
                     ),
-                    merge_commit_sha="e902a1300f7ae670a97a466c2d6ff851c4751450",
+                    occurred_at=datetime.datetime.fromisoformat("2024-11-13T00:32:58Z"),
+                    status=storage.PullRequestStatus.CLOSED,
                 ),
             )
 
@@ -94,9 +99,8 @@ class TestPullRequestEvents:
         def test_converted_to_draft(self, test_logic: PerTestLogic) -> None:
             test_logic.assertFixture(
                 "converted_to_draft",
-                _pull_request._ConvertedToDraftEvent(
+                _pull_request._StatusChangeEvent(
                     storage=test_logic.storage,
-                    timestamps=comparators.IsInstance.using(_common.Timestamps),
                     sender=test_logic.Senders.delfick,
                     head_and_base=_common.HeadAndBase(
                         head_ref="test1",
@@ -105,8 +109,13 @@ class TestPullRequestEvents:
                         base_sha="f2c691ea3431993ae49dcdd32b81a89c7859c4ec",
                     ),
                     pull_request=attrs.evolve(
-                        test_logic.pull_request, pr_number=1, branch_name="test1"
+                        test_logic.pull_request,
+                        pr_number=1,
+                        branch_name="test1",
+                        updated_at=datetime.datetime.fromisoformat("2024-11-12T23:55:59Z"),
                     ),
+                    occurred_at=datetime.datetime.fromisoformat("2024-11-12T23:55:59Z"),
+                    status=storage.PullRequestStatus.DRAFT,
                 ),
             )
 
@@ -114,9 +123,8 @@ class TestPullRequestEvents:
         def test_edited_base(self, test_logic: PerTestLogic) -> None:
             test_logic.assertFixture(
                 "edited-base",
-                _pull_request._BaseChangedEvent(
+                _pull_request._StatusChangeEvent(
                     storage=test_logic.storage,
-                    timestamps=comparators.IsInstance.using(_common.Timestamps),
                     sender=test_logic.Senders.delfick,
                     head_and_base=_common.HeadAndBase(
                         head_ref="change-file",
@@ -125,8 +133,13 @@ class TestPullRequestEvents:
                         base_sha="ce3858babcbf3c57458164e468ac0e9de9016e9d",
                     ),
                     pull_request=attrs.evolve(
-                        test_logic.pull_request, pr_number=4, branch_name="change-file"
+                        test_logic.pull_request,
+                        pr_number=4,
+                        branch_name="change-file",
+                        updated_at=datetime.datetime.fromisoformat("2026-04-18T07:22:41Z"),
                     ),
+                    occurred_at=datetime.datetime.fromisoformat("2026-04-18T07:22:41Z"),
+                    status=storage.PullRequestStatus.READY_FOR_REVIEW,
                 ),
             )
 
@@ -140,9 +153,8 @@ class TestPullRequestEvents:
         def test_opened(self, test_logic: PerTestLogic) -> None:
             test_logic.assertFixture(
                 "opened",
-                _pull_request._OpenedEvent(
+                _pull_request._StatusChangeEvent(
                     storage=test_logic.storage,
-                    timestamps=comparators.IsInstance.using(_common.Timestamps),
                     sender=test_logic.Senders.delfick,
                     head_and_base=_common.HeadAndBase(
                         head_ref="test1",
@@ -151,17 +163,21 @@ class TestPullRequestEvents:
                         base_sha="f2c691ea3431993ae49dcdd32b81a89c7859c4ec",
                     ),
                     pull_request=attrs.evolve(
-                        test_logic.pull_request, pr_number=1, branch_name="test1"
+                        test_logic.pull_request,
+                        pr_number=1,
+                        branch_name="test1",
+                        updated_at=datetime.datetime.fromisoformat("2024-11-12T21:49:58Z"),
                     ),
+                    occurred_at=datetime.datetime.fromisoformat("2024-11-12T21:49:58Z"),
+                    status=storage.PullRequestStatus.READY_FOR_REVIEW,
                 ),
             )
 
         def test_opened_revert(self, test_logic: PerTestLogic) -> None:
             test_logic.assertFixture(
                 "opened-revert",
-                _pull_request._OpenedEvent(
+                _pull_request._StatusChangeEvent(
                     storage=test_logic.storage,
-                    timestamps=comparators.IsInstance.using(_common.Timestamps),
                     sender=test_logic.Senders.delfick,
                     head_and_base=_common.HeadAndBase(
                         head_ref="revert-1-test1",
@@ -170,8 +186,13 @@ class TestPullRequestEvents:
                         base_sha="c41709e060bc496d3cd7df1d5ee339d0b223527b",
                     ),
                     pull_request=attrs.evolve(
-                        test_logic.pull_request, pr_number=2, branch_name="revert-1-test1"
+                        test_logic.pull_request,
+                        pr_number=2,
+                        branch_name="revert-1-test1",
+                        updated_at=datetime.datetime.fromisoformat("2024-11-13T00:32:01Z"),
                     ),
+                    occurred_at=datetime.datetime.fromisoformat("2024-11-13T00:32:01Z"),
+                    status=storage.PullRequestStatus.READY_FOR_REVIEW,
                 ),
             )
 
@@ -179,9 +200,8 @@ class TestPullRequestEvents:
         def test_ready_for_review(self, test_logic: PerTestLogic) -> None:
             test_logic.assertFixture(
                 "ready_for_review",
-                _pull_request._ReadyForReviewEvent(
+                _pull_request._StatusChangeEvent(
                     storage=test_logic.storage,
-                    timestamps=comparators.IsInstance.using(_common.Timestamps),
                     sender=test_logic.Senders.delfick,
                     head_and_base=_common.HeadAndBase(
                         head_ref="test1",
@@ -190,8 +210,13 @@ class TestPullRequestEvents:
                         base_sha="f2c691ea3431993ae49dcdd32b81a89c7859c4ec",
                     ),
                     pull_request=attrs.evolve(
-                        test_logic.pull_request, pr_number=1, branch_name="test1"
+                        test_logic.pull_request,
+                        pr_number=1,
+                        branch_name="test1",
+                        updated_at=datetime.datetime.fromisoformat("2024-11-13T00:00:56Z"),
                     ),
+                    occurred_at=datetime.datetime.fromisoformat("2024-11-13T00:00:56Z"),
+                    status=storage.PullRequestStatus.READY_FOR_REVIEW,
                 ),
             )
 
@@ -199,9 +224,8 @@ class TestPullRequestEvents:
         def test_reopend(self, test_logic: PerTestLogic) -> None:
             test_logic.assertFixture(
                 "reopened",
-                _pull_request._ReopendEvent(
+                _pull_request._StatusChangeEvent(
                     storage=test_logic.storage,
-                    timestamps=comparators.IsInstance.using(_common.Timestamps),
                     sender=test_logic.Senders.delfick,
                     head_and_base=_common.HeadAndBase(
                         head_ref="revert-1-test1",
@@ -210,8 +234,13 @@ class TestPullRequestEvents:
                         base_sha="c41709e060bc496d3cd7df1d5ee339d0b223527b",
                     ),
                     pull_request=attrs.evolve(
-                        test_logic.pull_request, pr_number=2, branch_name="revert-1-test1"
+                        test_logic.pull_request,
+                        pr_number=2,
+                        branch_name="revert-1-test1",
+                        updated_at=datetime.datetime.fromisoformat("2024-11-13T00:34:02Z"),
                     ),
+                    occurred_at=datetime.datetime.fromisoformat("2024-11-13T00:34:02Z"),
+                    status=storage.PullRequestStatus.READY_FOR_REVIEW,
                 ),
             )
 
@@ -219,9 +248,8 @@ class TestPullRequestEvents:
         def test_synchronize(self, test_logic: PerTestLogic) -> None:
             test_logic.assertFixture(
                 "synchronize",
-                _pull_request._SynchronizeEvent(
+                _pull_request._StatusChangeEvent(
                     storage=test_logic.storage,
-                    timestamps=comparators.IsInstance.using(_common.Timestamps),
                     sender=test_logic.Senders.delfick,
                     head_and_base=_common.HeadAndBase(
                         head_ref="change-file",
@@ -230,7 +258,12 @@ class TestPullRequestEvents:
                         base_sha="c41709e060bc496d3cd7df1d5ee339d0b223527b",
                     ),
                     pull_request=attrs.evolve(
-                        test_logic.pull_request, pr_number=4, branch_name="change-file"
+                        test_logic.pull_request,
+                        pr_number=4,
+                        branch_name="change-file",
+                        updated_at=datetime.datetime.fromisoformat("2026-04-18T07:22:00Z"),
                     ),
+                    occurred_at=datetime.datetime.fromisoformat("2026-04-18T07:22:00Z"),
+                    status=storage.PullRequestStatus.READY_FOR_REVIEW,
                 ),
             )

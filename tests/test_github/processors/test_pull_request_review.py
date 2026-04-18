@@ -2,7 +2,6 @@ import datetime
 
 import attrs
 import pytest
-from pr_change_tracker_test_driver import comparators
 from pr_change_tracker_test_driver import fixtures as fixture_helpers
 from pr_change_tracker_test_driver import storage as storage_helpers
 
@@ -23,6 +22,7 @@ class PerTestLogic:
             branch_name="",
             repo_name="test-for-github-webhooks",
             org="delfick",
+            updated_at=datetime.datetime.now(),
         )
     )
 
@@ -59,13 +59,24 @@ class TestPullRequestReviewEvents:
                         review_id=2431185757,
                         submitted_at=datetime.datetime.fromisoformat("2024-11-13T00:14:56Z"),
                         commit_id="20be90fb76987ea58ad9c7698bf06658b45178d1",
-                        state="dismissed",
+                        state=storage.ReviewState.DISMISSED,
+                        reviewer_id=393998,
+                        reviewer_login="kcollasarundell",
                     ),
-                    timestamps=comparators.IsInstance.using(_common.Timestamps),
+                    head_and_base=_common.HeadAndBase(
+                        head_ref="test1",
+                        head_sha="20be90fb76987ea58ad9c7698bf06658b45178d1",
+                        base_ref="main",
+                        base_sha="f2c691ea3431993ae49dcdd32b81a89c7859c4ec",
+                    ),
                     sender=test_logic.Senders.kcollasarundell,
                     pull_request=attrs.evolve(
-                        test_logic.pull_request, pr_number=1, branch_name="test1"
+                        test_logic.pull_request,
+                        pr_number=1,
+                        branch_name="test1",
+                        updated_at=datetime.datetime.fromisoformat("2024-11-13T00:23:02Z"),
                     ),
+                    status=storage.PullRequestStatus.READY_FOR_REVIEW,
                 ),
             )
 
@@ -78,13 +89,24 @@ class TestPullRequestReviewEvents:
                         review_id=2431217782,
                         submitted_at=datetime.datetime.fromisoformat("2024-11-13T00:28:41Z"),
                         commit_id="20be90fb76987ea58ad9c7698bf06658b45178d1",
-                        state="dismissed",
+                        state=storage.ReviewState.DISMISSED,
+                        reviewer_id=393998,
+                        reviewer_login="kcollasarundell",
                     ),
-                    timestamps=comparators.IsInstance.using(_common.Timestamps),
+                    head_and_base=_common.HeadAndBase(
+                        head_ref="test1",
+                        head_sha="20be90fb76987ea58ad9c7698bf06658b45178d1",
+                        base_ref="main",
+                        base_sha="f2c691ea3431993ae49dcdd32b81a89c7859c4ec",
+                    ),
                     sender=test_logic.Senders.delfick,
                     pull_request=attrs.evolve(
-                        test_logic.pull_request, pr_number=1, branch_name="test1"
+                        test_logic.pull_request,
+                        pr_number=1,
+                        branch_name="test1",
+                        updated_at=datetime.datetime.fromisoformat("2024-11-13T00:28:56Z"),
                     ),
+                    status=storage.PullRequestStatus.READY_FOR_REVIEW,
                 ),
             )
 
@@ -98,13 +120,24 @@ class TestPullRequestReviewEvents:
                         review_id=2431221502,
                         submitted_at=datetime.datetime.fromisoformat("2024-11-13T00:30:22Z"),
                         commit_id="20be90fb76987ea58ad9c7698bf06658b45178d1",
-                        state="approved",
+                        state=storage.ReviewState.APPROVED,
+                        reviewer_id=393998,
+                        reviewer_login="kcollasarundell",
                     ),
-                    timestamps=comparators.IsInstance.using(_common.Timestamps),
+                    head_and_base=_common.HeadAndBase(
+                        head_ref="test1",
+                        head_sha="20be90fb76987ea58ad9c7698bf06658b45178d1",
+                        base_ref="main",
+                        base_sha="f2c691ea3431993ae49dcdd32b81a89c7859c4ec",
+                    ),
                     sender=test_logic.Senders.kcollasarundell,
                     pull_request=attrs.evolve(
-                        test_logic.pull_request, pr_number=1, branch_name="test1"
+                        test_logic.pull_request,
+                        pr_number=1,
+                        branch_name="test1",
+                        updated_at=datetime.datetime.fromisoformat("2024-11-13T00:30:22Z"),
                     ),
+                    status=storage.PullRequestStatus.READY_FOR_REVIEW,
                 ),
             )
 
@@ -117,13 +150,24 @@ class TestPullRequestReviewEvents:
                         review_id=2431185757,
                         submitted_at=datetime.datetime.fromisoformat("2024-11-13T00:14:56Z"),
                         commit_id="20be90fb76987ea58ad9c7698bf06658b45178d1",
-                        state="changes_requested",
+                        state=storage.ReviewState.CHANGES_REQUESTED,
+                        reviewer_id=393998,
+                        reviewer_login="kcollasarundell",
                     ),
-                    timestamps=comparators.IsInstance.using(_common.Timestamps),
+                    head_and_base=_common.HeadAndBase(
+                        head_ref="test1",
+                        head_sha="20be90fb76987ea58ad9c7698bf06658b45178d1",
+                        base_ref="main",
+                        base_sha="f2c691ea3431993ae49dcdd32b81a89c7859c4ec",
+                    ),
                     sender=test_logic.Senders.kcollasarundell,
                     pull_request=attrs.evolve(
-                        test_logic.pull_request, pr_number=1, branch_name="test1"
+                        test_logic.pull_request,
+                        pr_number=1,
+                        branch_name="test1",
+                        updated_at=datetime.datetime.fromisoformat("2024-11-13T00:14:56Z"),
                     ),
+                    status=storage.PullRequestStatus.READY_FOR_REVIEW,
                 ),
             )
 

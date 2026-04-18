@@ -1,8 +1,3 @@
-from sqlalchemy import MetaData
-from sqlalchemy.orm import DeclarativeBase, MappedAsDataclass
+from sqlalchemy import orm
 
-metadata = MetaData()
-
-
-class Base(MappedAsDataclass, DeclarativeBase):
-    metadata = metadata
+registry = orm.registry()

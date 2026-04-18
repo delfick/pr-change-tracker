@@ -164,7 +164,7 @@ def tests(args: list[str]) -> None:
 @click.option(
     "--postgres-url",
     help="The url for the postgres database",
-    default="env:ALEMBIC_DB_URL",
+    default="env:PR_CHANGE_TRACKER_ALEMBIC_DB_URL",
     type=tracker_cli.EnvSecret(),
 )
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
@@ -172,7 +172,13 @@ def alembic(postgres_url: str, args: list[str]) -> None:
     """
     Run alembic
     """
-    run("python", "-m", "alembic", *args, env={**os.environ, "ALEMBIC_DB_URL": postgres_url})
+    run(
+        "python",
+        "-m",
+        "alembic",
+        *args,
+        env={**os.environ, "PR_CHANGE_TRACKER_ALEMBIC_DB_URL": postgres_url},
+    )
 
 
 if __name__ == "__main__":

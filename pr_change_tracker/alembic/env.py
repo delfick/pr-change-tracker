@@ -8,18 +8,18 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from pr_change_tracker.storage import metadata
+from pr_change_tracker import storage
 
 config = context.config
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-target_metadata = metadata
+target_metadata = storage.registry.metadata
 
 
 def _get_url() -> sqlalchemy.engine.url.URL:
-    url = sqlalchemy.engine.url.make_url(os.environ["ALEMBIC_DB_URL"])
+    url = sqlalchemy.engine.url.make_url(os.environ["PR_CHANGE_TRACKER_ALEMBIC_DB_URL"])
     url = url.set(drivername="postgresql+psycopg")
     return url
 

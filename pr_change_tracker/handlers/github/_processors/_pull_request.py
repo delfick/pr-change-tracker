@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import abc
 import datetime
-from collections.abc import Iterator
-from typing import ClassVar
+from collections.abc import Iterator, Mapping
+from typing import ClassVar, Literal
 
 import attrs
 import jsonpath
@@ -14,16 +14,16 @@ from pr_change_tracker.handlers import github as github_handlers
 from . import _common
 
 
+class InvalidClosedActionDetails(Exception):
+    pass
+
+
 class PullRequestEvent(abc.ABC):
     @abc.abstractmethod
-    def process(self) -> None: ...
+    async def process(self) -> None: ...
 
 
 class _Pointers:
-    merge_commit_sha: ClassVar[jsonpath.JSONPointer] = jsonpath.JSONPointer(
-        "/pull_request/merge_commit_sha"
-    )
-
     changed_base_ref: ClassVar[jsonpath.JSONPointer] = jsonpath.JSONPointer(
         "/changes/base/ref/from"
     )
@@ -31,114 +31,51 @@ class _Pointers:
         "/changes/base/sha/from"
     )
 
+    is_draft: ClassVar[jsonpath.JSONPointer] = jsonpath.JSONPointer("/pull_request/draft")
 
-@attrs.frozen
-class _MergedEvent(PullRequestEvent):
-    _storage: storage.CommonStorage
 
-    pull_request: _common.PullRequest
-    timestamps: _common.Timestamps
-    sender: _common.Sender
-    head_and_base: _common.HeadAndBase
-
-    merged_at: datetime.datetime
-    merge_commit_sha: str
-
-    def process(self) -> None:
-        pass
+def _get_open_status(
+    data: Mapping[str, object],
+) -> Literal[storage.PullRequestStatus.DRAFT, storage.PullRequestStatus.READY_FOR_REVIEW]:
+    is_draft = bool(_Pointers.is_draft.resolve(data))
+    if is_draft:
+        return storage.PullRequestStatus.DRAFT
+    else:
+        return storage.PullRequestStatus.READY_FOR_REVIEW
 
 
 @attrs.frozen
-class _ClosedEvent(PullRequestEvent):
+class _StatusChangeEvent(PullRequestEvent):
     _storage: storage.CommonStorage
 
     pull_request: _common.PullRequest
-    timestamps: _common.Timestamps
     sender: _common.Sender
     head_and_base: _common.HeadAndBase
 
-    merge_commit_sha: str
+    occurred_at: datetime.datetime
 
-    def process(self) -> None:
-        pass
+    status: storage.PullRequestStatus
 
-
-@attrs.frozen
-class _ConvertedToDraftEvent(PullRequestEvent):
-    _storage: storage.CommonStorage
-
-    pull_request: _common.PullRequest
-    timestamps: _common.Timestamps
-    sender: _common.Sender
-    head_and_base: _common.HeadAndBase
-
-    def process(self) -> None:
-        pass
-
-
-@attrs.frozen
-class _BaseChangedEvent(PullRequestEvent):
-    _storage: storage.CommonStorage
-
-    pull_request: _common.PullRequest
-    timestamps: _common.Timestamps
-    sender: _common.Sender
-    head_and_base: _common.HeadAndBase
-
-    def process(self) -> None:
-        pass
-
-
-@attrs.frozen
-class _OpenedEvent(PullRequestEvent):
-    _storage: storage.CommonStorage
-
-    pull_request: _common.PullRequest
-    timestamps: _common.Timestamps
-    sender: _common.Sender
-    head_and_base: _common.HeadAndBase
-
-    def process(self) -> None:
-        pass
-
-
-@attrs.frozen
-class _ReadyForReviewEvent(PullRequestEvent):
-    _storage: storage.CommonStorage
-
-    pull_request: _common.PullRequest
-    timestamps: _common.Timestamps
-    sender: _common.Sender
-    head_and_base: _common.HeadAndBase
-
-    def process(self) -> None:
-        pass
-
-
-@attrs.frozen
-class _ReopendEvent(PullRequestEvent):
-    _storage: storage.CommonStorage
-
-    pull_request: _common.PullRequest
-    timestamps: _common.Timestamps
-    sender: _common.Sender
-    head_and_base: _common.HeadAndBase
-
-    def process(self) -> None:
-        pass
-
-
-@attrs.frozen
-class _SynchronizeEvent(PullRequestEvent):
-    _storage: storage.CommonStorage
-
-    pull_request: _common.PullRequest
-    timestamps: _common.Timestamps
-    sender: _common.Sender
-    head_and_base: _common.HeadAndBase
-
-    def process(self) -> None:
-        pass
+    async def process(self) -> None:
+        await self._storage.record_pull_request_status_change(
+            pull_request=storage.PullRequestDetails(
+                pr_number=self.pull_request.pr_number,
+                repo_name=self.pull_request.repo_name,
+                org=self.pull_request.org,
+                branch_name=self.pull_request.branch_name,
+                updated_at=self.pull_request.updated_at,
+            ),
+            status_change=storage.PullRequestStatusChangeDetails(
+                status=self.status,
+                occurred_at=self.occurred_at,
+                head_ref=self.head_and_base.head_ref,
+                head_sha=self.head_and_base.head_sha,
+                base_ref=self.head_and_base.base_ref,
+                base_sha=self.head_and_base.base_sha,
+                sender_id=self.sender.id,
+                sender_login=self.sender.login,
+            ),
+        )
 
 
 @attrs.frozen
@@ -149,35 +86,38 @@ class PullRequestProcessor:
         match incoming.action:
             case "closed":
                 timestamps = _common.Timestamps.from_data(incoming.body)
-                merge_commit_sha = str(_Pointers.merge_commit_sha.resolve(incoming.body))
 
-                if timestamps.merged_at is None:
-                    yield _ClosedEvent(
-                        storage=self._storage,
-                        pull_request=_common.PullRequest.from_data(incoming.body),
-                        timestamps=timestamps,
-                        sender=_common.Sender.from_data(incoming.body),
-                        head_and_base=_common.HeadAndBase.from_data(incoming.body),
-                        merge_commit_sha=merge_commit_sha,
-                    )
-                else:
-                    yield _MergedEvent(
-                        storage=self._storage,
-                        pull_request=_common.PullRequest.from_data(incoming.body),
-                        timestamps=timestamps,
-                        sender=_common.Sender.from_data(incoming.body),
-                        head_and_base=_common.HeadAndBase.from_data(incoming.body),
-                        merged_at=timestamps.merged_at,
-                        merge_commit_sha=merge_commit_sha,
-                    )
+                match (timestamps.closed_at, timestamps.merged_at):
+                    case (datetime.datetime(), None):
+                        yield _StatusChangeEvent(
+                            storage=self._storage,
+                            pull_request=_common.PullRequest.from_data(incoming.body),
+                            sender=_common.Sender.from_data(incoming.body),
+                            head_and_base=_common.HeadAndBase.from_data(incoming.body),
+                            occurred_at=timestamps.closed_at,
+                            status=storage.PullRequestStatus.CLOSED,
+                        )
+                    case (datetime.datetime(), datetime.datetime()):
+                        yield _StatusChangeEvent(
+                            storage=self._storage,
+                            pull_request=_common.PullRequest.from_data(incoming.body),
+                            sender=_common.Sender.from_data(incoming.body),
+                            head_and_base=_common.HeadAndBase.from_data(incoming.body),
+                            occurred_at=timestamps.merged_at,
+                            status=storage.PullRequestStatus.MERGED,
+                        )
+                    case _:
+                        raise InvalidClosedActionDetails
 
             case "converted_to_draft":
-                yield _ConvertedToDraftEvent(
+                pull_request = _common.PullRequest.from_data(incoming.body)
+                yield _StatusChangeEvent(
                     storage=self._storage,
-                    pull_request=_common.PullRequest.from_data(incoming.body),
-                    timestamps=_common.Timestamps.from_data(incoming.body),
+                    pull_request=pull_request,
                     sender=_common.Sender.from_data(incoming.body),
                     head_and_base=_common.HeadAndBase.from_data(incoming.body),
+                    occurred_at=pull_request.updated_at,
+                    status=storage.PullRequestStatus.DRAFT,
                 )
 
             case "edited":
@@ -194,48 +134,61 @@ class PullRequestProcessor:
                         head_and_base.base_sha,
                     )
                 ):
-                    yield _BaseChangedEvent(
+                    pull_request = _common.PullRequest.from_data(incoming.body)
+
+                    yield _StatusChangeEvent(
                         storage=self._storage,
-                        pull_request=_common.PullRequest.from_data(incoming.body),
-                        timestamps=_common.Timestamps.from_data(incoming.body),
+                        pull_request=pull_request,
                         sender=_common.Sender.from_data(incoming.body),
                         head_and_base=head_and_base,
+                        occurred_at=pull_request.updated_at,
+                        status=_get_open_status(incoming.body),
                     )
 
             case "opened":
-                yield _OpenedEvent(
+                timestamps = _common.Timestamps.from_data(incoming.body)
+
+                yield _StatusChangeEvent(
                     storage=self._storage,
                     pull_request=_common.PullRequest.from_data(incoming.body),
-                    timestamps=_common.Timestamps.from_data(incoming.body),
                     sender=_common.Sender.from_data(incoming.body),
                     head_and_base=_common.HeadAndBase.from_data(incoming.body),
+                    occurred_at=timestamps.created_at,
+                    status=_get_open_status(incoming.body),
                 )
 
             case "ready_for_review":
-                yield _ReadyForReviewEvent(
+                pull_request = _common.PullRequest.from_data(incoming.body)
+                yield _StatusChangeEvent(
                     storage=self._storage,
-                    pull_request=_common.PullRequest.from_data(incoming.body),
-                    timestamps=_common.Timestamps.from_data(incoming.body),
+                    pull_request=pull_request,
                     sender=_common.Sender.from_data(incoming.body),
                     head_and_base=_common.HeadAndBase.from_data(incoming.body),
+                    occurred_at=pull_request.updated_at,
+                    status=storage.PullRequestStatus.READY_FOR_REVIEW,
                 )
 
             case "reopened":
-                yield _ReopendEvent(
+                pull_request = _common.PullRequest.from_data(incoming.body)
+
+                yield _StatusChangeEvent(
                     storage=self._storage,
-                    pull_request=_common.PullRequest.from_data(incoming.body),
-                    timestamps=_common.Timestamps.from_data(incoming.body),
+                    pull_request=pull_request,
                     sender=_common.Sender.from_data(incoming.body),
                     head_and_base=_common.HeadAndBase.from_data(incoming.body),
+                    occurred_at=pull_request.updated_at,
+                    status=_get_open_status(incoming.body),
                 )
 
             case "synchronize":
-                yield _SynchronizeEvent(
+                pull_request = _common.PullRequest.from_data(incoming.body)
+                yield _StatusChangeEvent(
                     storage=self._storage,
-                    pull_request=_common.PullRequest.from_data(incoming.body),
-                    timestamps=_common.Timestamps.from_data(incoming.body),
+                    pull_request=pull_request,
                     sender=_common.Sender.from_data(incoming.body),
                     head_and_base=_common.HeadAndBase.from_data(incoming.body),
+                    occurred_at=pull_request.updated_at,
+                    status=_get_open_status(incoming.body),
                 )
 
             # We don't care about these actions

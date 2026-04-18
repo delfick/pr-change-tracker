@@ -17,7 +17,7 @@ def determine_expected_signature(secret: str, body: bytes) -> str:
 
 
 class _WithProcess(Protocol):
-    def process(self) -> None: ...
+    async def process(self) -> None: ...
 
 
 @attrs.frozen

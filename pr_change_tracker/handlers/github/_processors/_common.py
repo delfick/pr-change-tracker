@@ -73,9 +73,9 @@ class Timestamps:
     @classmethod
     def from_data(cls, data: Mapping[str, object]) -> Self:
         created_at = datetime.datetime.fromisoformat(str(_Pointers.created_at.resolve(data)))
-        updated_at = datetime.datetime.fromisoformat(str(_Pointers.created_at.resolve(data)))
+        updated_at = datetime.datetime.fromisoformat(str(_Pointers.updated_at.resolve(data)))
 
-        closed_at_raw = _Pointers.created_at.resolve(data)
+        closed_at_raw = _Pointers.closed_at.resolve(data)
         if closed_at_raw is None:
             closed_at = None
         else:
@@ -98,6 +98,7 @@ class PullRequest:
     repo_name: str
     org: str
     branch_name: str
+    updated_at: datetime.datetime
 
     @classmethod
     def from_data(cls, data: Mapping[str, object]) -> Self:
@@ -107,4 +108,5 @@ class PullRequest:
             repo_name=repo_name,
             org=org,
             branch_name=str(_Pointers.branch_name.resolve(data)),
+            updated_at=datetime.datetime.fromisoformat(str(_Pointers.updated_at.resolve(data))),
         )

@@ -13,7 +13,7 @@ from .. import github
 
 
 class _WithProcess(Protocol):
-    def process(self) -> None: ...
+    async def process(self) -> None: ...
 
 
 class IncomingProcessor(Protocol):
@@ -97,7 +97,7 @@ class GithubWebhook:
 
         try:
             for event in self._process_incoming(incoming):
-                event.process()
+                await event.process()
         except github.GithubWebhookDropped as e:
             logger.info("Event dropped", reason=e.reason)
             return sanic.empty()

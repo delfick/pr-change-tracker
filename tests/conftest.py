@@ -12,8 +12,7 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
-from pr_change_tracker import cli, protocols
-from pr_change_tracker.storage import metadata
+from pr_change_tracker import cli, protocols, storage
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
@@ -45,8 +44,8 @@ async def db_engine(request: pytest.FixtureRequest) -> AsyncGenerator[AsyncEngin
     engine = create_async_engine(db_url, echo=False)
 
     async with engine.begin() as conn:
-        await conn.run_sync(metadata.drop_all)
-        await conn.run_sync(metadata.create_all)
+        await conn.run_sync(storage.registry.metadata.drop_all)
+        await conn.run_sync(storage.registry.metadata.create_all)
 
     yield engine
 
