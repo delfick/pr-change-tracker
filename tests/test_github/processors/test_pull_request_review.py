@@ -1,5 +1,6 @@
 import attrs
 import pytest
+from pr_change_tracker_test_driver import comparators
 from pr_change_tracker_test_driver import fixtures as fixture_helpers
 from pr_change_tracker_test_driver import storage as storage_helpers
 
@@ -39,6 +40,7 @@ class TestPullRequestReviewEvents:
             test_logic.assertFixture(
                 "dismissed-collab",
                 _pull_request_review._DismissedEvent(
+                    timestamps=comparators.IsInstance.using(_common.Timestamps),
                     pull_request=attrs.evolve(
                         test_logic.pull_request, pr_number=1, branch_name="test1"
                     ),
@@ -49,6 +51,7 @@ class TestPullRequestReviewEvents:
             test_logic.assertFixture(
                 "dismissed-owner",
                 _pull_request_review._DismissedEvent(
+                    timestamps=comparators.IsInstance.using(_common.Timestamps),
                     pull_request=attrs.evolve(
                         test_logic.pull_request, pr_number=1, branch_name="test1"
                     ),
@@ -60,6 +63,7 @@ class TestPullRequestReviewEvents:
             test_logic.assertFixture(
                 "submitted-approve",
                 _pull_request_review._SubmittedEvent(
+                    timestamps=comparators.IsInstance.using(_common.Timestamps),
                     pull_request=attrs.evolve(
                         test_logic.pull_request, pr_number=1, branch_name="test1"
                     ),
@@ -70,6 +74,7 @@ class TestPullRequestReviewEvents:
             test_logic.assertFixture(
                 "submitted-changes_requested-collab",
                 _pull_request_review._SubmittedEvent(
+                    timestamps=comparators.IsInstance.using(_common.Timestamps),
                     pull_request=attrs.evolve(
                         test_logic.pull_request, pr_number=1, branch_name="test1"
                     ),
@@ -80,6 +85,7 @@ class TestPullRequestReviewEvents:
             test_logic.assertFixture(
                 "submitted-commented-collab",
                 _pull_request_review._SubmittedEvent(
+                    timestamps=comparators.IsInstance.using(_common.Timestamps),
                     pull_request=attrs.evolve(
                         test_logic.pull_request, pr_number=1, branch_name="test1"
                     ),
@@ -90,6 +96,7 @@ class TestPullRequestReviewEvents:
             test_logic.assertFixture(
                 "submitted-commented-owner",
                 _pull_request_review._SubmittedEvent(
+                    timestamps=comparators.IsInstance.using(_common.Timestamps),
                     pull_request=attrs.evolve(
                         test_logic.pull_request, pr_number=1, branch_name="test1"
                     ),

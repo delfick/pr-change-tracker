@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import abc
+import datetime
 from collections.abc import Iterator
+from typing import ClassVar
 
 import attrs
+import jsonpath
 
 from pr_change_tracker import storage
 from pr_change_tracker.handlers import github as github_handlers
@@ -16,9 +19,30 @@ class PullRequestEvent(abc.ABC):
     def process(self) -> None: ...
 
 
+class _Pointers:
+    merge_commit_sha: ClassVar[jsonpath.JSONPointer] = jsonpath.JSONPointer(
+        "/pull_request/merge_commit_sha"
+    )
+
+
+@attrs.frozen
+class _MergedEvent(PullRequestEvent):
+    pull_request: _common.PullRequest
+    timestamps: _common.Timestamps
+
+    merged_at: datetime.datetime
+    merge_commit_sha: str
+
+    def process(self) -> None:
+        pass
+
+
 @attrs.frozen
 class _ClosedEvent(PullRequestEvent):
     pull_request: _common.PullRequest
+    timestamps: _common.Timestamps
+
+    merge_commit_sha: str
 
     def process(self) -> None:
         pass
@@ -27,6 +51,7 @@ class _ClosedEvent(PullRequestEvent):
 @attrs.frozen
 class _ConvertedToDraftEvent(PullRequestEvent):
     pull_request: _common.PullRequest
+    timestamps: _common.Timestamps
 
     def process(self) -> None:
         pass
@@ -35,6 +60,7 @@ class _ConvertedToDraftEvent(PullRequestEvent):
 @attrs.frozen
 class _EditedEvent(PullRequestEvent):
     pull_request: _common.PullRequest
+    timestamps: _common.Timestamps
 
     def process(self) -> None:
         pass
@@ -43,6 +69,7 @@ class _EditedEvent(PullRequestEvent):
 @attrs.frozen
 class _OpenedEvent(PullRequestEvent):
     pull_request: _common.PullRequest
+    timestamps: _common.Timestamps
 
     def process(self) -> None:
         pass
@@ -51,6 +78,7 @@ class _OpenedEvent(PullRequestEvent):
 @attrs.frozen
 class _ReadyForReviewEvent(PullRequestEvent):
     pull_request: _common.PullRequest
+    timestamps: _common.Timestamps
 
     def process(self) -> None:
         pass
@@ -59,6 +87,7 @@ class _ReadyForReviewEvent(PullRequestEvent):
 @attrs.frozen
 class _ReopendEvent(PullRequestEvent):
     pull_request: _common.PullRequest
+    timestamps: _common.Timestamps
 
     def process(self) -> None:
         pass
@@ -67,6 +96,7 @@ class _ReopendEvent(PullRequestEvent):
 @attrs.frozen
 class _SynchronizeEvent(PullRequestEvent):
     pull_request: _common.PullRequest
+    timestamps: _common.Timestamps
 
     def process(self) -> None:
         pass
@@ -79,38 +109,57 @@ class PullRequestProcessor:
     def process(self, incoming: github_handlers.Incoming) -> Iterator[PullRequestEvent]:
         match incoming.action:
             case "closed":
-                yield _ClosedEvent(
-                    pull_request=_common.PullRequest.from_data(incoming.body),
-                )
+                timestamps = _common.Timestamps.from_data(incoming.body)
+                merge_commit_sha = str(_Pointers.merge_commit_sha.resolve(incoming.body))
+
+                if timestamps.merged_at is None:
+                    yield _ClosedEvent(
+                        pull_request=_common.PullRequest.from_data(incoming.body),
+                        timestamps=timestamps,
+                        merge_commit_sha=merge_commit_sha,
+                    )
+                else:
+                    yield _MergedEvent(
+                        pull_request=_common.PullRequest.from_data(incoming.body),
+                        timestamps=timestamps,
+                        merged_at=timestamps.merged_at,
+                        merge_commit_sha=merge_commit_sha,
+                    )
 
             case "converted_to_draft":
                 yield _ConvertedToDraftEvent(
                     pull_request=_common.PullRequest.from_data(incoming.body),
+                    timestamps=_common.Timestamps.from_data(incoming.body),
                 )
 
             case "edited":
                 yield _EditedEvent(
                     pull_request=_common.PullRequest.from_data(incoming.body),
+                    timestamps=_common.Timestamps.from_data(incoming.body),
                 )
 
             case "opened":
                 yield _OpenedEvent(
                     pull_request=_common.PullRequest.from_data(incoming.body),
+                    timestamps=_common.Timestamps.from_data(incoming.body),
                 )
 
             case "ready_for_review":
                 yield _ReadyForReviewEvent(
                     pull_request=_common.PullRequest.from_data(incoming.body),
+                    timestamps=_common.Timestamps.from_data(incoming.body),
                 )
 
             case "reopened":
                 yield _ReopendEvent(
                     pull_request=_common.PullRequest.from_data(incoming.body),
+                    timestamps=_common.Timestamps.from_data(incoming.body),
                 )
 
             case "synchronize":
                 yield _SynchronizeEvent(
                     pull_request=_common.PullRequest.from_data(incoming.body),
+                    timestamps=_common.Timestamps.from_data(incoming.body),
                 )
 
             # We don't care about these actions

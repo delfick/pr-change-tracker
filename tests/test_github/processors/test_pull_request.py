@@ -1,5 +1,8 @@
+import datetime
+
 import attrs
 import pytest
+from pr_change_tracker_test_driver import comparators
 from pr_change_tracker_test_driver import fixtures as fixture_helpers
 from pr_change_tracker_test_driver import storage as storage_helpers
 
@@ -38,10 +41,13 @@ class TestPullRequestEvents:
         def test_closed_merged(self, test_logic: PerTestLogic) -> None:
             test_logic.assertFixture(
                 "closed-merged",
-                _pull_request._ClosedEvent(
+                _pull_request._MergedEvent(
+                    timestamps=comparators.IsInstance.using(_common.Timestamps),
                     pull_request=attrs.evolve(
                         test_logic.pull_request, pr_number=1, branch_name="test1"
                     ),
+                    merge_commit_sha="c41709e060bc496d3cd7df1d5ee339d0b223527b",
+                    merged_at=datetime.datetime.fromisoformat("2024-11-13T00:31:15Z"),
                 ),
             )
 
@@ -49,9 +55,11 @@ class TestPullRequestEvents:
             test_logic.assertFixture(
                 "closed-nomerge",
                 _pull_request._ClosedEvent(
+                    timestamps=comparators.IsInstance.using(_common.Timestamps),
                     pull_request=attrs.evolve(
                         test_logic.pull_request, pr_number=2, branch_name="revert-1-test1"
                     ),
+                    merge_commit_sha="e902a1300f7ae670a97a466c2d6ff851c4751450",
                 ),
             )
 
@@ -60,6 +68,7 @@ class TestPullRequestEvents:
             test_logic.assertFixture(
                 "converted_to_draft",
                 _pull_request._ConvertedToDraftEvent(
+                    timestamps=comparators.IsInstance.using(_common.Timestamps),
                     pull_request=attrs.evolve(
                         test_logic.pull_request, pr_number=1, branch_name="test1"
                     ),
@@ -74,6 +83,7 @@ class TestPullRequestEvents:
             test_logic.assertFixture(
                 "opened",
                 _pull_request._OpenedEvent(
+                    timestamps=comparators.IsInstance.using(_common.Timestamps),
                     pull_request=attrs.evolve(
                         test_logic.pull_request, pr_number=1, branch_name="test1"
                     ),
@@ -84,6 +94,7 @@ class TestPullRequestEvents:
             test_logic.assertFixture(
                 "opened-revert",
                 _pull_request._OpenedEvent(
+                    timestamps=comparators.IsInstance.using(_common.Timestamps),
                     pull_request=attrs.evolve(
                         test_logic.pull_request, pr_number=2, branch_name="revert-1-test1"
                     ),
@@ -95,6 +106,7 @@ class TestPullRequestEvents:
             test_logic.assertFixture(
                 "ready_for_review",
                 _pull_request._ReadyForReviewEvent(
+                    timestamps=comparators.IsInstance.using(_common.Timestamps),
                     pull_request=attrs.evolve(
                         test_logic.pull_request, pr_number=1, branch_name="test1"
                     ),
@@ -106,6 +118,7 @@ class TestPullRequestEvents:
             test_logic.assertFixture(
                 "reopened",
                 _pull_request._ReopendEvent(
+                    timestamps=comparators.IsInstance.using(_common.Timestamps),
                     pull_request=attrs.evolve(
                         test_logic.pull_request, pr_number=2, branch_name="revert-1-test1"
                     ),
