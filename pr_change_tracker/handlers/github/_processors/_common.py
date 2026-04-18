@@ -21,10 +21,33 @@ class _Pointers:
     sender_id: ClassVar[jsonpath.JSONPointer] = jsonpath.JSONPointer("/sender/id")
     sender_login: ClassVar[jsonpath.JSONPointer] = jsonpath.JSONPointer("/sender/login")
 
+    head_ref: ClassVar[jsonpath.JSONPointer] = jsonpath.JSONPointer("/pull_request/head/ref")
+    head_sha: ClassVar[jsonpath.JSONPointer] = jsonpath.JSONPointer("/pull_request/head/sha")
+    base_ref: ClassVar[jsonpath.JSONPointer] = jsonpath.JSONPointer("/pull_request/base/ref")
+    base_sha: ClassVar[jsonpath.JSONPointer] = jsonpath.JSONPointer("/pull_request/base/sha")
+
 
 def _as_int(value: object) -> int:
     assert isinstance(value, int)
     return value
+
+
+@attrs.frozen
+class HeadAndBase:
+    head_ref: str
+    head_sha: str
+
+    base_ref: str
+    base_sha: str
+
+    @classmethod
+    def from_data(cls, data: Mapping[str, object]) -> Self:
+        return cls(
+            head_ref=str(_Pointers.head_ref.resolve(data)),
+            head_sha=str(_Pointers.head_sha.resolve(data)),
+            base_ref=str(_Pointers.base_ref.resolve(data)),
+            base_sha=str(_Pointers.base_sha.resolve(data)),
+        )
 
 
 @attrs.frozen

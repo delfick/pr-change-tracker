@@ -47,6 +47,12 @@ class TestPullRequestEvents:
                 _pull_request._MergedEvent(
                     timestamps=comparators.IsInstance.using(_common.Timestamps),
                     sender=test_logic.Senders.delfick,
+                    head_and_base=_common.HeadAndBase(
+                        head_ref="test1",
+                        head_sha="20be90fb76987ea58ad9c7698bf06658b45178d1",
+                        base_ref="main",
+                        base_sha="f2c691ea3431993ae49dcdd32b81a89c7859c4ec",
+                    ),
                     pull_request=attrs.evolve(
                         test_logic.pull_request, pr_number=1, branch_name="test1"
                     ),
@@ -61,6 +67,12 @@ class TestPullRequestEvents:
                 _pull_request._ClosedEvent(
                     timestamps=comparators.IsInstance.using(_common.Timestamps),
                     sender=test_logic.Senders.delfick,
+                    head_and_base=_common.HeadAndBase(
+                        head_ref="revert-1-test1",
+                        head_sha="40c48fc469d5c5adc498cc1fac3f6430dd927701",
+                        base_ref="main",
+                        base_sha="c41709e060bc496d3cd7df1d5ee339d0b223527b",
+                    ),
                     pull_request=attrs.evolve(
                         test_logic.pull_request, pr_number=2, branch_name="revert-1-test1"
                     ),
@@ -75,6 +87,12 @@ class TestPullRequestEvents:
                 _pull_request._ConvertedToDraftEvent(
                     timestamps=comparators.IsInstance.using(_common.Timestamps),
                     sender=test_logic.Senders.delfick,
+                    head_and_base=_common.HeadAndBase(
+                        head_ref="test1",
+                        head_sha="20be90fb76987ea58ad9c7698bf06658b45178d1",
+                        base_ref="main",
+                        base_sha="f2c691ea3431993ae49dcdd32b81a89c7859c4ec",
+                    ),
                     pull_request=attrs.evolve(
                         test_logic.pull_request, pr_number=1, branch_name="test1"
                     ),
@@ -91,6 +109,12 @@ class TestPullRequestEvents:
                 _pull_request._OpenedEvent(
                     timestamps=comparators.IsInstance.using(_common.Timestamps),
                     sender=test_logic.Senders.delfick,
+                    head_and_base=_common.HeadAndBase(
+                        head_ref="test1",
+                        head_sha="20be90fb76987ea58ad9c7698bf06658b45178d1",
+                        base_ref="main",
+                        base_sha="f2c691ea3431993ae49dcdd32b81a89c7859c4ec",
+                    ),
                     pull_request=attrs.evolve(
                         test_logic.pull_request, pr_number=1, branch_name="test1"
                     ),
@@ -103,6 +127,12 @@ class TestPullRequestEvents:
                 _pull_request._OpenedEvent(
                     timestamps=comparators.IsInstance.using(_common.Timestamps),
                     sender=test_logic.Senders.delfick,
+                    head_and_base=_common.HeadAndBase(
+                        head_ref="revert-1-test1",
+                        head_sha="40c48fc469d5c5adc498cc1fac3f6430dd927701",
+                        base_ref="main",
+                        base_sha="c41709e060bc496d3cd7df1d5ee339d0b223527b",
+                    ),
                     pull_request=attrs.evolve(
                         test_logic.pull_request, pr_number=2, branch_name="revert-1-test1"
                     ),
@@ -116,6 +146,12 @@ class TestPullRequestEvents:
                 _pull_request._ReadyForReviewEvent(
                     timestamps=comparators.IsInstance.using(_common.Timestamps),
                     sender=test_logic.Senders.delfick,
+                    head_and_base=_common.HeadAndBase(
+                        head_ref="test1",
+                        head_sha="20be90fb76987ea58ad9c7698bf06658b45178d1",
+                        base_ref="main",
+                        base_sha="f2c691ea3431993ae49dcdd32b81a89c7859c4ec",
+                    ),
                     pull_request=attrs.evolve(
                         test_logic.pull_request, pr_number=1, branch_name="test1"
                     ),
@@ -129,6 +165,12 @@ class TestPullRequestEvents:
                 _pull_request._ReopendEvent(
                     timestamps=comparators.IsInstance.using(_common.Timestamps),
                     sender=test_logic.Senders.delfick,
+                    head_and_base=_common.HeadAndBase(
+                        head_ref="revert-1-test1",
+                        head_sha="40c48fc469d5c5adc498cc1fac3f6430dd927701",
+                        base_ref="main",
+                        base_sha="c41709e060bc496d3cd7df1d5ee339d0b223527b",
+                    ),
                     pull_request=attrs.evolve(
                         test_logic.pull_request, pr_number=2, branch_name="revert-1-test1"
                     ),

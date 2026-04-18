@@ -30,6 +30,7 @@ class _MergedEvent(PullRequestEvent):
     pull_request: _common.PullRequest
     timestamps: _common.Timestamps
     sender: _common.Sender
+    head_and_base: _common.HeadAndBase
 
     merged_at: datetime.datetime
     merge_commit_sha: str
@@ -43,6 +44,7 @@ class _ClosedEvent(PullRequestEvent):
     pull_request: _common.PullRequest
     timestamps: _common.Timestamps
     sender: _common.Sender
+    head_and_base: _common.HeadAndBase
 
     merge_commit_sha: str
 
@@ -55,6 +57,7 @@ class _ConvertedToDraftEvent(PullRequestEvent):
     pull_request: _common.PullRequest
     timestamps: _common.Timestamps
     sender: _common.Sender
+    head_and_base: _common.HeadAndBase
 
     def process(self) -> None:
         pass
@@ -65,6 +68,7 @@ class _EditedEvent(PullRequestEvent):
     pull_request: _common.PullRequest
     timestamps: _common.Timestamps
     sender: _common.Sender
+    head_and_base: _common.HeadAndBase
 
     def process(self) -> None:
         pass
@@ -75,6 +79,7 @@ class _OpenedEvent(PullRequestEvent):
     pull_request: _common.PullRequest
     timestamps: _common.Timestamps
     sender: _common.Sender
+    head_and_base: _common.HeadAndBase
 
     def process(self) -> None:
         pass
@@ -85,6 +90,7 @@ class _ReadyForReviewEvent(PullRequestEvent):
     pull_request: _common.PullRequest
     timestamps: _common.Timestamps
     sender: _common.Sender
+    head_and_base: _common.HeadAndBase
 
     def process(self) -> None:
         pass
@@ -95,6 +101,7 @@ class _ReopendEvent(PullRequestEvent):
     pull_request: _common.PullRequest
     timestamps: _common.Timestamps
     sender: _common.Sender
+    head_and_base: _common.HeadAndBase
 
     def process(self) -> None:
         pass
@@ -105,6 +112,7 @@ class _SynchronizeEvent(PullRequestEvent):
     pull_request: _common.PullRequest
     timestamps: _common.Timestamps
     sender: _common.Sender
+    head_and_base: _common.HeadAndBase
 
     def process(self) -> None:
         pass
@@ -125,6 +133,7 @@ class PullRequestProcessor:
                         pull_request=_common.PullRequest.from_data(incoming.body),
                         timestamps=timestamps,
                         sender=_common.Sender.from_data(incoming.body),
+                        head_and_base=_common.HeadAndBase.from_data(incoming.body),
                         merge_commit_sha=merge_commit_sha,
                     )
                 else:
@@ -132,6 +141,7 @@ class PullRequestProcessor:
                         pull_request=_common.PullRequest.from_data(incoming.body),
                         timestamps=timestamps,
                         sender=_common.Sender.from_data(incoming.body),
+                        head_and_base=_common.HeadAndBase.from_data(incoming.body),
                         merged_at=timestamps.merged_at,
                         merge_commit_sha=merge_commit_sha,
                     )
@@ -141,6 +151,7 @@ class PullRequestProcessor:
                     pull_request=_common.PullRequest.from_data(incoming.body),
                     timestamps=_common.Timestamps.from_data(incoming.body),
                     sender=_common.Sender.from_data(incoming.body),
+                    head_and_base=_common.HeadAndBase.from_data(incoming.body),
                 )
 
             case "edited":
@@ -148,6 +159,7 @@ class PullRequestProcessor:
                     pull_request=_common.PullRequest.from_data(incoming.body),
                     timestamps=_common.Timestamps.from_data(incoming.body),
                     sender=_common.Sender.from_data(incoming.body),
+                    head_and_base=_common.HeadAndBase.from_data(incoming.body),
                 )
 
             case "opened":
@@ -155,6 +167,7 @@ class PullRequestProcessor:
                     pull_request=_common.PullRequest.from_data(incoming.body),
                     timestamps=_common.Timestamps.from_data(incoming.body),
                     sender=_common.Sender.from_data(incoming.body),
+                    head_and_base=_common.HeadAndBase.from_data(incoming.body),
                 )
 
             case "ready_for_review":
@@ -162,6 +175,7 @@ class PullRequestProcessor:
                     pull_request=_common.PullRequest.from_data(incoming.body),
                     timestamps=_common.Timestamps.from_data(incoming.body),
                     sender=_common.Sender.from_data(incoming.body),
+                    head_and_base=_common.HeadAndBase.from_data(incoming.body),
                 )
 
             case "reopened":
@@ -169,6 +183,7 @@ class PullRequestProcessor:
                     pull_request=_common.PullRequest.from_data(incoming.body),
                     timestamps=_common.Timestamps.from_data(incoming.body),
                     sender=_common.Sender.from_data(incoming.body),
+                    head_and_base=_common.HeadAndBase.from_data(incoming.body),
                 )
 
             case "synchronize":
@@ -176,6 +191,7 @@ class PullRequestProcessor:
                     pull_request=_common.PullRequest.from_data(incoming.body),
                     timestamps=_common.Timestamps.from_data(incoming.body),
                     sender=_common.Sender.from_data(incoming.body),
+                    head_and_base=_common.HeadAndBase.from_data(incoming.body),
                 )
 
             # We don't care about these actions
