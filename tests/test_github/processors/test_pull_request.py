@@ -186,4 +186,21 @@ class TestPullRequestEvents:
             )
 
     class TestSynchronizeAction:
-        pass
+        def test_synchronize(self, test_logic: PerTestLogic) -> None:
+            test_logic.assertFixture(
+                "synchronize",
+                _pull_request._SynchronizeEvent(
+                    storage=test_logic.storage,
+                    timestamps=comparators.IsInstance.using(_common.Timestamps),
+                    sender=test_logic.Senders.delfick,
+                    head_and_base=_common.HeadAndBase(
+                        head_ref="change-file",
+                        head_sha="02ebe652bf359cadb5f96375ce9b21637cdbc1eb",
+                        base_ref="main",
+                        base_sha="c41709e060bc496d3cd7df1d5ee339d0b223527b",
+                    ),
+                    pull_request=attrs.evolve(
+                        test_logic.pull_request, pr_number=4, branch_name="change-file"
+                    ),
+                ),
+            )
