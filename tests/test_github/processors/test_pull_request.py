@@ -13,8 +13,9 @@ from pr_change_tracker.handlers.github._processors import _common, _pull_request
 
 @attrs.frozen
 class PerTestLogic:
-    _storage: storage.CommonStorage
     _hook_fixtures: fixture_helpers.HookFixtures
+
+    storage: storage.CommonStorage
 
     pull_request: _common.PullRequest = attrs.field(
         default=_common.PullRequest(
@@ -30,7 +31,7 @@ class PerTestLogic:
 
     def assertFixture(self, fixture_name: str, *events: object) -> None:
         incoming = self._hook_fixtures.incoming_from_fixture(fixture_name)
-        processor = github_handlers.IncomingProcessor(storage=self._storage)
+        processor = github_handlers.IncomingProcessor(storage=self.storage)
         assert list(processor.process(incoming)) == list(events)
 
 
@@ -45,6 +46,7 @@ class TestPullRequestEvents:
             test_logic.assertFixture(
                 "closed-merged",
                 _pull_request._MergedEvent(
+                    storage=test_logic.storage,
                     timestamps=comparators.IsInstance.using(_common.Timestamps),
                     sender=test_logic.Senders.delfick,
                     head_and_base=_common.HeadAndBase(
@@ -65,6 +67,7 @@ class TestPullRequestEvents:
             test_logic.assertFixture(
                 "closed-nomerge",
                 _pull_request._ClosedEvent(
+                    storage=test_logic.storage,
                     timestamps=comparators.IsInstance.using(_common.Timestamps),
                     sender=test_logic.Senders.delfick,
                     head_and_base=_common.HeadAndBase(
@@ -85,6 +88,7 @@ class TestPullRequestEvents:
             test_logic.assertFixture(
                 "converted_to_draft",
                 _pull_request._ConvertedToDraftEvent(
+                    storage=test_logic.storage,
                     timestamps=comparators.IsInstance.using(_common.Timestamps),
                     sender=test_logic.Senders.delfick,
                     head_and_base=_common.HeadAndBase(
@@ -107,6 +111,7 @@ class TestPullRequestEvents:
             test_logic.assertFixture(
                 "opened",
                 _pull_request._OpenedEvent(
+                    storage=test_logic.storage,
                     timestamps=comparators.IsInstance.using(_common.Timestamps),
                     sender=test_logic.Senders.delfick,
                     head_and_base=_common.HeadAndBase(
@@ -125,6 +130,7 @@ class TestPullRequestEvents:
             test_logic.assertFixture(
                 "opened-revert",
                 _pull_request._OpenedEvent(
+                    storage=test_logic.storage,
                     timestamps=comparators.IsInstance.using(_common.Timestamps),
                     sender=test_logic.Senders.delfick,
                     head_and_base=_common.HeadAndBase(
@@ -144,6 +150,7 @@ class TestPullRequestEvents:
             test_logic.assertFixture(
                 "ready_for_review",
                 _pull_request._ReadyForReviewEvent(
+                    storage=test_logic.storage,
                     timestamps=comparators.IsInstance.using(_common.Timestamps),
                     sender=test_logic.Senders.delfick,
                     head_and_base=_common.HeadAndBase(
@@ -163,6 +170,7 @@ class TestPullRequestEvents:
             test_logic.assertFixture(
                 "reopened",
                 _pull_request._ReopendEvent(
+                    storage=test_logic.storage,
                     timestamps=comparators.IsInstance.using(_common.Timestamps),
                     sender=test_logic.Senders.delfick,
                     head_and_base=_common.HeadAndBase(

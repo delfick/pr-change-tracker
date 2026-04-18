@@ -27,6 +27,8 @@ class _Pointers:
 
 @attrs.frozen
 class _MergedEvent(PullRequestEvent):
+    _storage: storage.CommonStorage
+
     pull_request: _common.PullRequest
     timestamps: _common.Timestamps
     sender: _common.Sender
@@ -41,6 +43,8 @@ class _MergedEvent(PullRequestEvent):
 
 @attrs.frozen
 class _ClosedEvent(PullRequestEvent):
+    _storage: storage.CommonStorage
+
     pull_request: _common.PullRequest
     timestamps: _common.Timestamps
     sender: _common.Sender
@@ -54,6 +58,8 @@ class _ClosedEvent(PullRequestEvent):
 
 @attrs.frozen
 class _ConvertedToDraftEvent(PullRequestEvent):
+    _storage: storage.CommonStorage
+
     pull_request: _common.PullRequest
     timestamps: _common.Timestamps
     sender: _common.Sender
@@ -65,6 +71,8 @@ class _ConvertedToDraftEvent(PullRequestEvent):
 
 @attrs.frozen
 class _EditedEvent(PullRequestEvent):
+    _storage: storage.CommonStorage
+
     pull_request: _common.PullRequest
     timestamps: _common.Timestamps
     sender: _common.Sender
@@ -76,6 +84,8 @@ class _EditedEvent(PullRequestEvent):
 
 @attrs.frozen
 class _OpenedEvent(PullRequestEvent):
+    _storage: storage.CommonStorage
+
     pull_request: _common.PullRequest
     timestamps: _common.Timestamps
     sender: _common.Sender
@@ -87,6 +97,8 @@ class _OpenedEvent(PullRequestEvent):
 
 @attrs.frozen
 class _ReadyForReviewEvent(PullRequestEvent):
+    _storage: storage.CommonStorage
+
     pull_request: _common.PullRequest
     timestamps: _common.Timestamps
     sender: _common.Sender
@@ -98,6 +110,8 @@ class _ReadyForReviewEvent(PullRequestEvent):
 
 @attrs.frozen
 class _ReopendEvent(PullRequestEvent):
+    _storage: storage.CommonStorage
+
     pull_request: _common.PullRequest
     timestamps: _common.Timestamps
     sender: _common.Sender
@@ -109,6 +123,8 @@ class _ReopendEvent(PullRequestEvent):
 
 @attrs.frozen
 class _SynchronizeEvent(PullRequestEvent):
+    _storage: storage.CommonStorage
+
     pull_request: _common.PullRequest
     timestamps: _common.Timestamps
     sender: _common.Sender
@@ -130,6 +146,7 @@ class PullRequestProcessor:
 
                 if timestamps.merged_at is None:
                     yield _ClosedEvent(
+                        storage=self._storage,
                         pull_request=_common.PullRequest.from_data(incoming.body),
                         timestamps=timestamps,
                         sender=_common.Sender.from_data(incoming.body),
@@ -138,6 +155,7 @@ class PullRequestProcessor:
                     )
                 else:
                     yield _MergedEvent(
+                        storage=self._storage,
                         pull_request=_common.PullRequest.from_data(incoming.body),
                         timestamps=timestamps,
                         sender=_common.Sender.from_data(incoming.body),
@@ -148,6 +166,7 @@ class PullRequestProcessor:
 
             case "converted_to_draft":
                 yield _ConvertedToDraftEvent(
+                    storage=self._storage,
                     pull_request=_common.PullRequest.from_data(incoming.body),
                     timestamps=_common.Timestamps.from_data(incoming.body),
                     sender=_common.Sender.from_data(incoming.body),
@@ -156,6 +175,7 @@ class PullRequestProcessor:
 
             case "edited":
                 yield _EditedEvent(
+                    storage=self._storage,
                     pull_request=_common.PullRequest.from_data(incoming.body),
                     timestamps=_common.Timestamps.from_data(incoming.body),
                     sender=_common.Sender.from_data(incoming.body),
@@ -164,6 +184,7 @@ class PullRequestProcessor:
 
             case "opened":
                 yield _OpenedEvent(
+                    storage=self._storage,
                     pull_request=_common.PullRequest.from_data(incoming.body),
                     timestamps=_common.Timestamps.from_data(incoming.body),
                     sender=_common.Sender.from_data(incoming.body),
@@ -172,6 +193,7 @@ class PullRequestProcessor:
 
             case "ready_for_review":
                 yield _ReadyForReviewEvent(
+                    storage=self._storage,
                     pull_request=_common.PullRequest.from_data(incoming.body),
                     timestamps=_common.Timestamps.from_data(incoming.body),
                     sender=_common.Sender.from_data(incoming.body),
@@ -180,6 +202,7 @@ class PullRequestProcessor:
 
             case "reopened":
                 yield _ReopendEvent(
+                    storage=self._storage,
                     pull_request=_common.PullRequest.from_data(incoming.body),
                     timestamps=_common.Timestamps.from_data(incoming.body),
                     sender=_common.Sender.from_data(incoming.body),
@@ -188,6 +211,7 @@ class PullRequestProcessor:
 
             case "synchronize":
                 yield _SynchronizeEvent(
+                    storage=self._storage,
                     pull_request=_common.PullRequest.from_data(incoming.body),
                     timestamps=_common.Timestamps.from_data(incoming.body),
                     sender=_common.Sender.from_data(incoming.body),

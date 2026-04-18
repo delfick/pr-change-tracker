@@ -11,8 +11,9 @@ from pr_change_tracker.handlers.github._processors import _common, _pull_request
 
 @attrs.frozen
 class PerTestLogic:
-    _storage: storage.CommonStorage
     _hook_fixtures: fixture_helpers.HookFixtures
+
+    storage: storage.CommonStorage
 
     pull_request: _common.PullRequest = attrs.field(
         default=_common.PullRequest(
@@ -29,7 +30,7 @@ class PerTestLogic:
 
     def assertFixture(self, fixture_name: str, *events: object) -> None:
         incoming = self._hook_fixtures.incoming_from_fixture(fixture_name)
-        processor = github_handlers.IncomingProcessor(storage=self._storage)
+        processor = github_handlers.IncomingProcessor(storage=self.storage)
         assert list(processor.process(incoming)) == list(events)
 
 
@@ -44,6 +45,7 @@ class TestPullRequestReviewEvents:
             test_logic.assertFixture(
                 "dismissed-collab",
                 _pull_request_review._DismissedEvent(
+                    storage=test_logic.storage,
                     timestamps=comparators.IsInstance.using(_common.Timestamps),
                     sender=test_logic.Senders.kcollasarundell,
                     pull_request=attrs.evolve(
@@ -56,6 +58,7 @@ class TestPullRequestReviewEvents:
             test_logic.assertFixture(
                 "dismissed-owner",
                 _pull_request_review._DismissedEvent(
+                    storage=test_logic.storage,
                     timestamps=comparators.IsInstance.using(_common.Timestamps),
                     sender=test_logic.Senders.delfick,
                     pull_request=attrs.evolve(
@@ -69,6 +72,7 @@ class TestPullRequestReviewEvents:
             test_logic.assertFixture(
                 "submitted-approve",
                 _pull_request_review._SubmittedEvent(
+                    storage=test_logic.storage,
                     timestamps=comparators.IsInstance.using(_common.Timestamps),
                     sender=test_logic.Senders.kcollasarundell,
                     pull_request=attrs.evolve(
@@ -81,6 +85,7 @@ class TestPullRequestReviewEvents:
             test_logic.assertFixture(
                 "submitted-changes_requested-collab",
                 _pull_request_review._SubmittedEvent(
+                    storage=test_logic.storage,
                     timestamps=comparators.IsInstance.using(_common.Timestamps),
                     sender=test_logic.Senders.kcollasarundell,
                     pull_request=attrs.evolve(
@@ -93,6 +98,7 @@ class TestPullRequestReviewEvents:
             test_logic.assertFixture(
                 "submitted-commented-collab",
                 _pull_request_review._SubmittedEvent(
+                    storage=test_logic.storage,
                     timestamps=comparators.IsInstance.using(_common.Timestamps),
                     sender=test_logic.Senders.kcollasarundell,
                     pull_request=attrs.evolve(
@@ -105,6 +111,7 @@ class TestPullRequestReviewEvents:
             test_logic.assertFixture(
                 "submitted-commented-owner",
                 _pull_request_review._SubmittedEvent(
+                    storage=test_logic.storage,
                     timestamps=comparators.IsInstance.using(_common.Timestamps),
                     sender=test_logic.Senders.delfick,
                     pull_request=attrs.evolve(

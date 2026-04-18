@@ -18,6 +18,8 @@ class PullRequestReviewEvent(abc.ABC):
 
 @attrs.frozen
 class _DismissedEvent(PullRequestReviewEvent):
+    _storage: storage.CommonStorage
+
     pull_request: _common.PullRequest
     timestamps: _common.Timestamps
     sender: _common.Sender
@@ -28,6 +30,8 @@ class _DismissedEvent(PullRequestReviewEvent):
 
 @attrs.frozen
 class _SubmittedEvent(PullRequestReviewEvent):
+    _storage: storage.CommonStorage
+
     pull_request: _common.PullRequest
     timestamps: _common.Timestamps
     sender: _common.Sender
@@ -44,6 +48,7 @@ class PullRequestReviewProcessor:
         match incoming.action:
             case "dismissed":
                 yield _DismissedEvent(
+                    storage=self._storage,
                     pull_request=_common.PullRequest.from_data(incoming.body),
                     timestamps=_common.Timestamps.from_data(incoming.body),
                     sender=_common.Sender.from_data(incoming.body),
@@ -51,6 +56,7 @@ class PullRequestReviewProcessor:
 
             case "submitted":
                 yield _SubmittedEvent(
+                    storage=self._storage,
                     pull_request=_common.PullRequest.from_data(incoming.body),
                     timestamps=_common.Timestamps.from_data(incoming.body),
                     sender=_common.Sender.from_data(incoming.body),
