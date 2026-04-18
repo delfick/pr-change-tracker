@@ -29,6 +29,7 @@ class _Pointers:
 class _MergedEvent(PullRequestEvent):
     pull_request: _common.PullRequest
     timestamps: _common.Timestamps
+    sender: _common.Sender
 
     merged_at: datetime.datetime
     merge_commit_sha: str
@@ -41,6 +42,7 @@ class _MergedEvent(PullRequestEvent):
 class _ClosedEvent(PullRequestEvent):
     pull_request: _common.PullRequest
     timestamps: _common.Timestamps
+    sender: _common.Sender
 
     merge_commit_sha: str
 
@@ -52,6 +54,7 @@ class _ClosedEvent(PullRequestEvent):
 class _ConvertedToDraftEvent(PullRequestEvent):
     pull_request: _common.PullRequest
     timestamps: _common.Timestamps
+    sender: _common.Sender
 
     def process(self) -> None:
         pass
@@ -61,6 +64,7 @@ class _ConvertedToDraftEvent(PullRequestEvent):
 class _EditedEvent(PullRequestEvent):
     pull_request: _common.PullRequest
     timestamps: _common.Timestamps
+    sender: _common.Sender
 
     def process(self) -> None:
         pass
@@ -70,6 +74,7 @@ class _EditedEvent(PullRequestEvent):
 class _OpenedEvent(PullRequestEvent):
     pull_request: _common.PullRequest
     timestamps: _common.Timestamps
+    sender: _common.Sender
 
     def process(self) -> None:
         pass
@@ -79,6 +84,7 @@ class _OpenedEvent(PullRequestEvent):
 class _ReadyForReviewEvent(PullRequestEvent):
     pull_request: _common.PullRequest
     timestamps: _common.Timestamps
+    sender: _common.Sender
 
     def process(self) -> None:
         pass
@@ -88,6 +94,7 @@ class _ReadyForReviewEvent(PullRequestEvent):
 class _ReopendEvent(PullRequestEvent):
     pull_request: _common.PullRequest
     timestamps: _common.Timestamps
+    sender: _common.Sender
 
     def process(self) -> None:
         pass
@@ -97,6 +104,7 @@ class _ReopendEvent(PullRequestEvent):
 class _SynchronizeEvent(PullRequestEvent):
     pull_request: _common.PullRequest
     timestamps: _common.Timestamps
+    sender: _common.Sender
 
     def process(self) -> None:
         pass
@@ -116,12 +124,14 @@ class PullRequestProcessor:
                     yield _ClosedEvent(
                         pull_request=_common.PullRequest.from_data(incoming.body),
                         timestamps=timestamps,
+                        sender=_common.Sender.from_data(incoming.body),
                         merge_commit_sha=merge_commit_sha,
                     )
                 else:
                     yield _MergedEvent(
                         pull_request=_common.PullRequest.from_data(incoming.body),
                         timestamps=timestamps,
+                        sender=_common.Sender.from_data(incoming.body),
                         merged_at=timestamps.merged_at,
                         merge_commit_sha=merge_commit_sha,
                     )
@@ -130,36 +140,42 @@ class PullRequestProcessor:
                 yield _ConvertedToDraftEvent(
                     pull_request=_common.PullRequest.from_data(incoming.body),
                     timestamps=_common.Timestamps.from_data(incoming.body),
+                    sender=_common.Sender.from_data(incoming.body),
                 )
 
             case "edited":
                 yield _EditedEvent(
                     pull_request=_common.PullRequest.from_data(incoming.body),
                     timestamps=_common.Timestamps.from_data(incoming.body),
+                    sender=_common.Sender.from_data(incoming.body),
                 )
 
             case "opened":
                 yield _OpenedEvent(
                     pull_request=_common.PullRequest.from_data(incoming.body),
                     timestamps=_common.Timestamps.from_data(incoming.body),
+                    sender=_common.Sender.from_data(incoming.body),
                 )
 
             case "ready_for_review":
                 yield _ReadyForReviewEvent(
                     pull_request=_common.PullRequest.from_data(incoming.body),
                     timestamps=_common.Timestamps.from_data(incoming.body),
+                    sender=_common.Sender.from_data(incoming.body),
                 )
 
             case "reopened":
                 yield _ReopendEvent(
                     pull_request=_common.PullRequest.from_data(incoming.body),
                     timestamps=_common.Timestamps.from_data(incoming.body),
+                    sender=_common.Sender.from_data(incoming.body),
                 )
 
             case "synchronize":
                 yield _SynchronizeEvent(
                     pull_request=_common.PullRequest.from_data(incoming.body),
                     timestamps=_common.Timestamps.from_data(incoming.body),
+                    sender=_common.Sender.from_data(incoming.body),
                 )
 
             # We don't care about these actions

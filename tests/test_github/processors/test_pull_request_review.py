@@ -23,6 +23,10 @@ class PerTestLogic:
         )
     )
 
+    class Senders:
+        delfick = _common.Sender(id=109301, login="delfick")
+        kcollasarundell = _common.Sender(id=393998, login="kcollasarundell")
+
     def assertFixture(self, fixture_name: str, *events: object) -> None:
         incoming = self._hook_fixtures.incoming_from_fixture(fixture_name)
         processor = github_handlers.IncomingProcessor(storage=self._storage)
@@ -41,6 +45,7 @@ class TestPullRequestReviewEvents:
                 "dismissed-collab",
                 _pull_request_review._DismissedEvent(
                     timestamps=comparators.IsInstance.using(_common.Timestamps),
+                    sender=test_logic.Senders.kcollasarundell,
                     pull_request=attrs.evolve(
                         test_logic.pull_request, pr_number=1, branch_name="test1"
                     ),
@@ -52,6 +57,7 @@ class TestPullRequestReviewEvents:
                 "dismissed-owner",
                 _pull_request_review._DismissedEvent(
                     timestamps=comparators.IsInstance.using(_common.Timestamps),
+                    sender=test_logic.Senders.delfick,
                     pull_request=attrs.evolve(
                         test_logic.pull_request, pr_number=1, branch_name="test1"
                     ),
@@ -64,6 +70,7 @@ class TestPullRequestReviewEvents:
                 "submitted-approve",
                 _pull_request_review._SubmittedEvent(
                     timestamps=comparators.IsInstance.using(_common.Timestamps),
+                    sender=test_logic.Senders.kcollasarundell,
                     pull_request=attrs.evolve(
                         test_logic.pull_request, pr_number=1, branch_name="test1"
                     ),
@@ -75,6 +82,7 @@ class TestPullRequestReviewEvents:
                 "submitted-changes_requested-collab",
                 _pull_request_review._SubmittedEvent(
                     timestamps=comparators.IsInstance.using(_common.Timestamps),
+                    sender=test_logic.Senders.kcollasarundell,
                     pull_request=attrs.evolve(
                         test_logic.pull_request, pr_number=1, branch_name="test1"
                     ),
@@ -86,6 +94,7 @@ class TestPullRequestReviewEvents:
                 "submitted-commented-collab",
                 _pull_request_review._SubmittedEvent(
                     timestamps=comparators.IsInstance.using(_common.Timestamps),
+                    sender=test_logic.Senders.kcollasarundell,
                     pull_request=attrs.evolve(
                         test_logic.pull_request, pr_number=1, branch_name="test1"
                     ),
@@ -97,6 +106,7 @@ class TestPullRequestReviewEvents:
                 "submitted-commented-owner",
                 _pull_request_review._SubmittedEvent(
                     timestamps=comparators.IsInstance.using(_common.Timestamps),
+                    sender=test_logic.Senders.delfick,
                     pull_request=attrs.evolve(
                         test_logic.pull_request, pr_number=1, branch_name="test1"
                     ),

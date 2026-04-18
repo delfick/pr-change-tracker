@@ -20,6 +20,7 @@ class PullRequestReviewEvent(abc.ABC):
 class _DismissedEvent(PullRequestReviewEvent):
     pull_request: _common.PullRequest
     timestamps: _common.Timestamps
+    sender: _common.Sender
 
     def process(self) -> None:
         pass
@@ -29,6 +30,7 @@ class _DismissedEvent(PullRequestReviewEvent):
 class _SubmittedEvent(PullRequestReviewEvent):
     pull_request: _common.PullRequest
     timestamps: _common.Timestamps
+    sender: _common.Sender
 
     def process(self) -> None:
         pass
@@ -44,12 +46,14 @@ class PullRequestReviewProcessor:
                 yield _DismissedEvent(
                     pull_request=_common.PullRequest.from_data(incoming.body),
                     timestamps=_common.Timestamps.from_data(incoming.body),
+                    sender=_common.Sender.from_data(incoming.body),
                 )
 
             case "submitted":
                 yield _SubmittedEvent(
                     pull_request=_common.PullRequest.from_data(incoming.body),
                     timestamps=_common.Timestamps.from_data(incoming.body),
+                    sender=_common.Sender.from_data(incoming.body),
                 )
 
             case "edited":

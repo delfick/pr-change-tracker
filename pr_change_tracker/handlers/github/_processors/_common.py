@@ -18,10 +18,26 @@ class _Pointers:
     closed_at: ClassVar[jsonpath.JSONPointer] = jsonpath.JSONPointer("/pull_request/closed_at")
     merged_at: ClassVar[jsonpath.JSONPointer] = jsonpath.JSONPointer("/pull_request/merged_at")
 
+    sender_id: ClassVar[jsonpath.JSONPointer] = jsonpath.JSONPointer("/sender/id")
+    sender_login: ClassVar[jsonpath.JSONPointer] = jsonpath.JSONPointer("/sender/login")
+
 
 def _as_int(value: object) -> int:
     assert isinstance(value, int)
     return value
+
+
+@attrs.frozen
+class Sender:
+    id: int
+    login: str
+
+    @classmethod
+    def from_data(cls, data: Mapping[str, object]) -> Self:
+        return cls(
+            id=_as_int(_Pointers.sender_id.resolve(data)),
+            login=str(_Pointers.sender_login.resolve(data)),
+        )
 
 
 @attrs.frozen

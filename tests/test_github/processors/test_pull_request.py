@@ -25,6 +25,9 @@ class PerTestLogic:
         )
     )
 
+    class Senders:
+        delfick = _common.Sender(id=109301, login="delfick")
+
     def assertFixture(self, fixture_name: str, *events: object) -> None:
         incoming = self._hook_fixtures.incoming_from_fixture(fixture_name)
         processor = github_handlers.IncomingProcessor(storage=self._storage)
@@ -43,6 +46,7 @@ class TestPullRequestEvents:
                 "closed-merged",
                 _pull_request._MergedEvent(
                     timestamps=comparators.IsInstance.using(_common.Timestamps),
+                    sender=test_logic.Senders.delfick,
                     pull_request=attrs.evolve(
                         test_logic.pull_request, pr_number=1, branch_name="test1"
                     ),
@@ -56,6 +60,7 @@ class TestPullRequestEvents:
                 "closed-nomerge",
                 _pull_request._ClosedEvent(
                     timestamps=comparators.IsInstance.using(_common.Timestamps),
+                    sender=test_logic.Senders.delfick,
                     pull_request=attrs.evolve(
                         test_logic.pull_request, pr_number=2, branch_name="revert-1-test1"
                     ),
@@ -69,6 +74,7 @@ class TestPullRequestEvents:
                 "converted_to_draft",
                 _pull_request._ConvertedToDraftEvent(
                     timestamps=comparators.IsInstance.using(_common.Timestamps),
+                    sender=test_logic.Senders.delfick,
                     pull_request=attrs.evolve(
                         test_logic.pull_request, pr_number=1, branch_name="test1"
                     ),
@@ -84,6 +90,7 @@ class TestPullRequestEvents:
                 "opened",
                 _pull_request._OpenedEvent(
                     timestamps=comparators.IsInstance.using(_common.Timestamps),
+                    sender=test_logic.Senders.delfick,
                     pull_request=attrs.evolve(
                         test_logic.pull_request, pr_number=1, branch_name="test1"
                     ),
@@ -95,6 +102,7 @@ class TestPullRequestEvents:
                 "opened-revert",
                 _pull_request._OpenedEvent(
                     timestamps=comparators.IsInstance.using(_common.Timestamps),
+                    sender=test_logic.Senders.delfick,
                     pull_request=attrs.evolve(
                         test_logic.pull_request, pr_number=2, branch_name="revert-1-test1"
                     ),
@@ -107,6 +115,7 @@ class TestPullRequestEvents:
                 "ready_for_review",
                 _pull_request._ReadyForReviewEvent(
                     timestamps=comparators.IsInstance.using(_common.Timestamps),
+                    sender=test_logic.Senders.delfick,
                     pull_request=attrs.evolve(
                         test_logic.pull_request, pr_number=1, branch_name="test1"
                     ),
@@ -119,6 +128,7 @@ class TestPullRequestEvents:
                 "reopened",
                 _pull_request._ReopendEvent(
                     timestamps=comparators.IsInstance.using(_common.Timestamps),
+                    sender=test_logic.Senders.delfick,
                     pull_request=attrs.evolve(
                         test_logic.pull_request, pr_number=2, branch_name="revert-1-test1"
                     ),
