@@ -7,7 +7,7 @@ from typing import Protocol
 import attrs
 import sanic
 
-from pr_change_tracker.protocols import Logger
+from pr_change_tracker.progress import Progress
 
 from .. import github
 
@@ -51,58 +51,62 @@ async def print_hook(
 
 @attrs.frozen
 class GithubWebhook:
-    _logger: Logger
+    _progress: Progress
 
     _process_incoming: IncomingProcessor
     _determine_expected_signature: ExpectedSignatureDeterminer
 
     async def handle(self, request: sanic.Request) -> sanic.response.HTTPResponse:
-        logger = self._logger
+        progress = self._progress
         if "x-github-delivery" in request.headers:
-            logger = logger.bind(github_delivery=request.headers["x-github-delivery"])
+            progress = progress.with_bound_logger(
+                github_delivery=request.headers["x-github-delivery"]
+            )
 
         if not request.headers["user-agent"].startswith("GitHub-Hookshot/"):
             # Github documentation say the user agent should always start with this specific string
-            logger.error("User agent field was incorrect", found=request.headers["user-agent"])
+            progress.logger.error(
+                "User agent field was incorrect", found=request.headers["user-agent"]
+            )
             return sanic.empty(400)
 
         try:
             hub_signature_256 = request.headers["x-hub-signature-256"]
         except KeyError:
-            logger.error("No x-hub-signature-256 header provided")
+            progress.logger.error("No x-hub-signature-256 header provided")
             return sanic.empty(400)
         else:
             if not hub_signature_256:
-                logger.error("No x-hub-signature-256 header provided")
+                progress.logger.error("No x-hub-signature-256 header provided")
                 return sanic.empty(400)
 
         expected_signature = self._determine_expected_signature(request.body)
         if not hmac.compare_digest(expected_signature, hub_signature_256):
-            logger.error("Request from github web hook has invalid signature")
+            progress.logger.error("Request from github web hook has invalid signature")
             return sanic.empty(403)
 
         try:
             body: dict[str, object] = request.json
         except (TypeError, ValueError):
-            logger.exception("Failed to parse the webhook body as json")
+            progress.logger.exception("Failed to parse the webhook body as json")
             return sanic.empty(500)
 
         try:
             incoming = github.Incoming.from_http_request(
-                headers=request.headers, body=body, logger=logger
+                headers=request.headers, body=body, progress=progress
             )
         except github.UnexpectedEmptyHeader:
-            logger.error("Webhook has unexpected empty values")
+            progress.logger.error("Webhook has unexpected empty values")
             return sanic.empty(400)
 
         try:
             for event in self._process_incoming(incoming):
                 await event.process()
         except github.GithubWebhookDropped as e:
-            logger.info("Event dropped", reason=e.reason)
+            progress.logger.info("Event dropped", reason=e.reason)
             return sanic.empty()
         except github.GithubWebhookError:
-            logger.exception("Failed to process webhook")
+            progress.logger.exception("Failed to process webhook")
             return sanic.empty(500)
         else:
             return sanic.empty()

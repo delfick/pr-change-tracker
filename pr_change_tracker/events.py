@@ -9,7 +9,7 @@ from collections.abc import Callable
 
 import attrs
 
-from pr_change_tracker import protocols, storage
+from pr_change_tracker import progress, storage
 
 from .api import github as github_api
 
@@ -23,13 +23,13 @@ def _on_done(res: asyncio.Future[None]) -> None:
 
 def make_postgres_event_processor(
     *,
-    logger: protocols.Logger,
+    progress: progress.Progress,
     postgres_url: str,
     github_api_token: str,
     github_api_requester: str,
 ) -> EventProcessor:
     return EventProcessor(
-        logger=logger,
+        progress=progress,
         storage=storage.PostgresStorage(
             engine=storage.make_engine(postgres_url=postgres_url),
         ),
@@ -43,7 +43,7 @@ def make_postgres_event_processor(
 
 @attrs.frozen
 class EventProcessor:
-    _logger: protocols.Logger
+    _progress: progress.Progress
 
     _storage: storage.CommonStorage
     _manage_github_api: Callable[
@@ -84,7 +84,7 @@ class EventProcessor:
             try:
                 await self._tick(gh)
             except:
-                self._logger.exception("Failed to run the tick")
+                self._progress.logger.exception("Failed to run the tick")
 
             next_tick = datetime.timedelta(minutes=1)
             now = datetime.datetime.now()
@@ -125,7 +125,9 @@ class EventProcessor:
             tasks.append(task)
 
         await asyncio.gather(*tasks)
-        self._logger.info("Updated pull requests", total=success + errored, errored=errored)
+        self._progress.logger.info(
+            "Updated pull requests", total=success + errored, errored=errored
+        )
 
     async def _update_pr(
         self,

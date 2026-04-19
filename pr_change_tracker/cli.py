@@ -5,7 +5,7 @@ from typing import Protocol
 import click
 import structlog
 
-from . import events, http_server, protocols
+from . import events, http_server, progress
 
 
 class EnvSecret(click.ParamType):
@@ -68,7 +68,7 @@ class CLIOptions:
     )
 
 
-def setup_logging(dev_logging: bool) -> protocols.Logger:
+def setup_logging(dev_logging: bool) -> progress.Logger:
     timestamper = structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M:%S")
     shared_processors: list[structlog.typing.Processor] = [
         # structlog.contextvars.merge_contextvars,
@@ -125,7 +125,7 @@ class HttpServerConstructor(Protocol):
         github_webhook_secret: str,
         debug_github_webhook_secret: str | None,
         port: int,
-        logger: protocols.Logger,
+        progress: progress.Progress,
     ) -> _WithServeForever: ...
 
 
@@ -144,7 +144,7 @@ def start_http_server(
         github_webhook_secret=github_webhook_secret,
         debug_github_webhook_secret=debug_github_webhook_secret,
         port=port,
-        logger=logger,
+        progress=progress.Progress(logger=logger),
     )
     server.serve_forever()
 
@@ -153,7 +153,7 @@ class EventProcessorConstructor(Protocol):
     def __call__(
         self,
         *,
-        logger: protocols.Logger,
+        progress: progress.Progress,
         postgres_url: str,
         github_api_token: str,
         github_api_requester: str,
@@ -170,7 +170,7 @@ def start_event_processor(
 ) -> None:
     logger = setup_logging(dev_logging)
     processor = processor_constructor(
-        logger=logger,
+        progress=progress.Progress(logger=logger),
         github_api_token=github_api_token,
         github_api_requester=github_api_requester,
         postgres_url=postgres_url,

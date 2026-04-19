@@ -10,7 +10,7 @@ import sanic
 from hypercorn.asyncio import serve as hypercorn_serve
 from hypercorn.config import Config
 
-from . import protocols, storage
+from . import progress, storage
 from .handlers import github as github_handlers
 from .handlers import sanic as sanic_handlers
 
@@ -21,7 +21,7 @@ class ServerBase[T_SanicConfig: sanic.Config, T_SanicNamespace]:
     github_webhook_secret: str
     debug_github_webhook_secret: str | None
     port: int
-    logger: protocols.Logger
+    _progress: progress.Progress
 
     def serve_forever(self) -> None:
         config = self.make_hypercorn_config()
@@ -49,7 +49,7 @@ class ServerBase[T_SanicConfig: sanic.Config, T_SanicNamespace]:
         self, *, app: sanic.Sanic[T_SanicConfig, T_SanicNamespace]
     ) -> sanic.Sanic[T_SanicConfig, T_SanicNamespace]:
         github_handler = sanic_handlers.GithubWebhook(
-            logger=self.logger,
+            progress=self._progress,
             process_incoming=github_handlers.IncomingProcessor(storage=self.storage).process,
             determine_expected_signature=functools.partial(
                 github_handlers.determine_expected_signature, self.github_webhook_secret
@@ -106,10 +106,10 @@ def make_server(
     github_webhook_secret: str,
     debug_github_webhook_secret: str | None,
     port: int,
-    logger: protocols.Logger,
+    progress: progress.Progress,
 ) -> Server:
     return Server(
-        logger=logger,
+        progress=progress,
         port=port,
         github_webhook_secret=github_webhook_secret,
         debug_github_webhook_secret=debug_github_webhook_secret,

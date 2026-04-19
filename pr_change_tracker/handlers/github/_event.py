@@ -3,7 +3,7 @@ from typing import Self, TypedDict
 
 import attrs
 
-from pr_change_tracker.protocols import Logger
+from pr_change_tracker.progress import Progress
 
 from . import _errors
 
@@ -21,8 +21,8 @@ class Incoming:
     # The json in the body of the request
     body: Mapping[str, object]
 
-    # Logger instance already bound with relevant information
-    logger: Logger
+    # progress instance has logger already bound with relevant information
+    progress: Progress
 
     # Name of the event that triggered the delivery.
     event: str
@@ -41,7 +41,7 @@ class Incoming:
 
     @classmethod
     def from_http_request(
-        cls, headers: Mapping[str, str], body: Mapping[str, object], logger: Logger
+        cls, headers: Mapping[str, str], body: Mapping[str, object], progress: Progress
     ) -> Self:
 
         def _get_header(name: str) -> str:
@@ -52,7 +52,7 @@ class Incoming:
 
         return cls(
             body=body,
-            logger=logger,
+            progress=progress,
             delivery=_get_header("x-github-delivery"),
             event=_get_header("x-github-event"),
             hook_id=_get_header("x-github-hook-id"),

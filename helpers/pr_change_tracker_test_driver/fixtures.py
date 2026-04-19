@@ -9,7 +9,7 @@ from typing import Self
 import attrs
 import pytest
 
-from pr_change_tracker import protocols
+from pr_change_tracker import progress
 from pr_change_tracker.handlers import github as github_handlers
 
 
@@ -46,16 +46,16 @@ class _FixtureData:
 
 @attrs.frozen
 class HookFixtures:
-    _logger: protocols.Logger
+    _progress: progress.Progress
     _fixture_folder: pathlib.Path
 
     @classmethod
     def as_fixture(
         cls, fixture_folder: pathlib.Path
-    ) -> Callable[[protocols.Logger], HookFixtures]:
+    ) -> Callable[[progress.Progress], HookFixtures]:
         @pytest.fixture
-        def hook_fixtures(logger: protocols.Logger) -> HookFixtures:
-            return cls(logger=logger, fixture_folder=fixture_folder)
+        def hook_fixtures(progress: progress.Progress) -> HookFixtures:
+            return cls(progress=progress, fixture_folder=fixture_folder)
 
         return hook_fixtures
 
@@ -63,5 +63,5 @@ class HookFixtures:
         data = _FixtureData.from_path(pathlib.Path(self._fixture_folder, name))
 
         return github_handlers.Incoming.from_http_request(
-            headers=data.headers, body=data.body, logger=self._logger
+            headers=data.headers, body=data.body, progress=self._progress
         )

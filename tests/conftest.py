@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
-from pr_change_tracker import cli, protocols, storage
+from pr_change_tracker import cli, progress, storage
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
@@ -29,11 +29,11 @@ def _setup_logger() -> None:
     cli.setup_logging(dev_logging=True)
 
 
-@pytest.fixture
-def logger() -> protocols.Logger:
+@pytest.fixture(name="progress")
+def progress_fixture() -> progress.Progress:
     log = structlog.get_logger().bind()
     assert isinstance(log, structlog.stdlib.BoundLogger)
-    return log
+    return progress.Progress(logger=log)
 
 
 @pytest.fixture(scope="session", autouse=True)
