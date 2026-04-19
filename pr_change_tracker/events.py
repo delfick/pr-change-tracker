@@ -12,13 +12,23 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from pr_change_tracker import protocols, storage
 
 
+def _on_done(res: asyncio.Future[None]) -> None:
+    if res.cancelled():
+        return
+
+    res.exception()
+
+
 def make_postgres_event_processor(
     *, logger: protocols.Logger, postgres_url: str
 ) -> EventProcessor:
     url = sqlalchemy.engine.url.make_url(postgres_url)
     url = url.set(drivername="postgresql+psycopg")
     return EventProcessor(
-        logger=logger, storage=storage.PostgresStorage(engine=create_async_engine(url))
+        logger=logger,
+        storage=storage.PostgresStorage(
+            engine=create_async_engine(url),
+        ),
     )
 
 
@@ -27,6 +37,7 @@ class EventProcessor:
     _logger: protocols.Logger
 
     _storage: storage.CommonStorage
+    _max_concurrent_pr_updates: int = attrs.field(default=4)
 
     def serve_forever(self) -> None:
         asyncio.run(self._serve())
@@ -72,15 +83,30 @@ class EventProcessor:
     async def _tick(self) -> None:
         success = 0
         errored = 0
-        async for pr in self._storage.changed_pull_requests():
-            async with pr.update() as (details, latest_status):
-                try:
-                    await self._update_pr(details=details, latest_status=latest_status)
-                    success += 1
-                except:
-                    errored += 1
-                    raise
 
+        limit = asyncio.Semaphore(self._max_concurrent_pr_updates)
+
+        async def _run_update(pr: storage.CommonPullRequestUpdater) -> None:
+            nonlocal success
+            nonlocal errored
+
+            async with limit:
+                async with pr.update() as (details, latest_status):
+                    try:
+                        await self._update_pr(details=details, latest_status=latest_status)
+                        success += 1
+                    except:
+                        errored += 1
+                        raise
+
+        loop = asyncio.get_running_loop()
+        tasks: list[asyncio.Task[None]] = []
+        async for pr in self._storage.changed_pull_requests():
+            task = loop.create_task(_run_update(pr))
+            task.add_done_callback(_on_done)
+            tasks.append(task)
+
+        await asyncio.gather(*tasks)
         self._logger.info("Updated pull requests", total=success + errored, errored=errored)
 
     async def _update_pr(
