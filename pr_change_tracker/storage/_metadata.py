@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import sqlalchemy
 import sqlalchemy.engine.url
 from sqlalchemy import orm

@@ -93,3 +93,5 @@ select = [
 "__init__.py" = [
     "F401",     # https://docs.astral.sh/ruff/rules/unused-import/
 ]
+[tool.ruff.lint.isort]
+required-imports = ["from __future__ import annotations"]
