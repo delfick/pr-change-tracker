@@ -27,6 +27,37 @@ class EnvSecret(click.ParamType):
         return value
 
 
+class CLIOptions:
+    postgres_url_option = click.option(
+        "--postgres-url",
+        help="The url for the postgres database",
+        default="env:PR_CHANGE_TRACKER_ALEMBIC_DB_URL",
+        type=EnvSecret(),
+    )
+    dev_logging_option = click.option(
+        "--dev-logging",
+        is_flag=True,
+        help="Print out the logs as human readable",
+    )
+    github_webhook_secret_option = click.option(
+        "--github-webhook-secret",
+        help="The value of the secret for the github webhooks or 'env:NAME_OF_ENV_VAR'",
+        default="env:PR_CHANGE_TRACKER_GITHUB_WEBHOOK_SECRET",
+        type=EnvSecret(),
+    )
+    provide_git_webhook_debug_endpoint_option = click.option(
+        "--provide-git-webhook-debug-endpoint",
+        help="Used to enable an endpoint to print out full incoming http requests from the github webhook for test fixtures",
+        is_flag=True,
+    )
+    port_option = click.option(
+        "--port",
+        help="The port to expose the app from. Defaults to $PR_CHANGE_TRACKER_SERVER_PORT or 3000",
+        default=os.environ.get("PR_CHANGE_TRACKER_SERVER_PORT", 3000),
+        type=int,
+    )
+
+
 def setup_logging(dev_logging: bool) -> protocols.Logger:
     timestamper = structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M:%S")
     shared_processors: list[structlog.typing.Processor] = [
@@ -126,48 +157,12 @@ def start_event_processor(
     processor.serve_forever()
 
 
-postgres_url_option = click.option(
-    "--postgres-url",
-    help="The url for the postgres database",
-    default="env:PR_CHANGE_TRACKER_ALEMBIC_DB_URL",
-    type=EnvSecret(),
-)
-dev_logging_option = click.option(
-    "--dev-logging",
-    is_flag=True,
-    help="Print out the logs as human readable",
-)
-
-
-def http_server_args[**P_Args, T_Ret](func: Callable[P_Args, T_Ret]) -> Callable[P_Args, T_Ret]:
-    @click.option(
-        "--github-webhook-secret",
-        help="The value of the secret for the github webhooks or 'env:NAME_OF_ENV_VAR'",
-        default="env:PR_CHANGE_TRACKER_GITHUB_WEBHOOK_SECRET",
-        type=EnvSecret(),
-    )
-    @click.option(
-        "--provide-git-webhook-debug-endpoint",
-        help="Used to enable an endpoint to print out full incoming http requests from the github webhook for test fixtures",
-        is_flag=True,
-    )
-    @postgres_url_option
-    @click.option(
-        "--port",
-        help="The port to expose the app from. Defaults to $PR_CHANGE_TRACKER_SERVER_PORT or 3000",
-        default=os.environ.get("PR_CHANGE_TRACKER_SERVER_PORT", 3000),
-        type=int,
-    )
-    @dev_logging_option
-    @functools.wraps(func)
-    def wrapped(*args: P_Args.args, **kwargs: P_Args.kwargs) -> T_Ret:
-        return func(*args, **kwargs)
-
-    return wrapped
-
-
 @click.command
-@http_server_args
+@CLIOptions.github_webhook_secret_option
+@CLIOptions.provide_git_webhook_debug_endpoint_option
+@CLIOptions.postgres_url_option
+@CLIOptions.port_option
+@CLIOptions.dev_logging_option
 def serve_http(
     *,
     github_webhook_secret: str,
@@ -191,8 +186,8 @@ def serve_http(
 
 
 @click.command
-@postgres_url_option
-@dev_logging_option
+@CLIOptions.postgres_url_option
+@CLIOptions.dev_logging_option
 def event_processor(*, postgres_url: str, dev_logging: bool) -> None:
     return start_event_processor(
         postgres_url=postgres_url,
