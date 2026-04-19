@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datetime
 
 import sqlalchemy
@@ -11,6 +13,24 @@ class PullRequest:
     __tablename__ = "pull_request"
 
     pr_number: orm.Mapped[int] = orm.mapped_column(primary_key=True)
+
+    repo_name: orm.Mapped[str] = orm.mapped_column()
+    org: orm.Mapped[str] = orm.mapped_column()
+    branch_name: orm.Mapped[str] = orm.mapped_column()
+
+
+@orm.mapped_as_dataclass(_metadata.registry)
+class PullRequestChangedEvent:
+    __tablename__ = "pull_request_changed_event"
+
+    id: orm.Mapped[_metadata.BigInt] = orm.mapped_column(init=False, primary_key=True)
+
+    pr_updated_at: orm.Mapped[datetime.datetime] = orm.mapped_column()
+
+    pr_number: orm.Mapped[int] = orm.mapped_column(
+        sqlalchemy.ForeignKey(PullRequest.pr_number), init=False
+    )
+    pr: orm.Mapped[PullRequest] = orm.relationship()
 
 
 @orm.mapped_as_dataclass(_metadata.registry)

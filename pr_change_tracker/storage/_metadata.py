@@ -1,3 +1,6 @@
+import sqlalchemy
 from sqlalchemy import orm
 
-registry = orm.registry()
+type BigInt = int
+
+registry = orm.registry(type_annotation_map={BigInt: sqlalchemy.BigInteger})

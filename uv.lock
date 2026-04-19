@@ -1017,11 +1017,10 @@ dependencies = [
     { name = "alembic" },
     { name = "attrs" },
     { name = "cattrs" },
-    { name = "greenlet" },
     { name = "hypercorn" },
     { name = "python-jsonpath" },
     { name = "sanic" },
-    { name = "sqlalchemy", extra = ["postgresql-psycopg"] },
+    { name = "sqlalchemy", extra = ["asyncio", "postgresql-psycopg"] },
     { name = "structlog" },
 ]
 
@@ -1043,12 +1042,11 @@ requires-dist = [
     { name = "alembic", specifier = ">=1.18.4" },
     { name = "attrs", specifier = ">=26.1.0" },
     { name = "cattrs", specifier = ">=26.1.0" },
-    { name = "greenlet", specifier = ">=3.4.0" },
     { name = "hypercorn", specifier = ">=0.18.0" },
     { name = "pr-change-tracker-test-driver", marker = "extra == 'tools'", editable = "helpers" },
     { name = "python-jsonpath", specifier = ">=2.0.2" },
     { name = "sanic", specifier = ">=25.12.0" },
-    { name = "sqlalchemy", extras = ["postgresql-psycopg"], specifier = ">=2.0.49" },
+    { name = "sqlalchemy", extras = ["asyncio", "postgresql-psycopg"], specifier = ">=2.0.49" },
     { name = "structlog", specifier = ">=25.5.0" },
     { name = "tools", marker = "extra == 'tools'", editable = "tools" },
 ]
@@ -1725,6 +1723,9 @@ wheels = [
 ]
 
 [package.optional-dependencies]
+asyncio = [
+    { name = "greenlet" },
+]
 postgresql-psycopg = [
     { name = "psycopg" },
 ]

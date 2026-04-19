@@ -1,6 +1,21 @@
+import contextlib
+from collections.abc import AsyncGenerator, AsyncIterator
+
 import attrs
 
 from pr_change_tracker import storage
+
+
+@attrs.frozen
+class _PullRequestUpdater(storage.CommonPullRequestUpdater):
+    @contextlib.asynccontextmanager
+    async def update(
+        self,
+    ) -> AsyncGenerator[tuple[storage.PullRequestDetails, storage.PullRequestStatusChangeDetails]]:
+        if False:
+            yield
+
+        raise NotImplementedError()
 
 
 @attrs.frozen
@@ -36,3 +51,8 @@ class MemoryStorage(storage.CommonStorage):
                 review_change,
             )
         )
+
+    async def changed_pull_requests(self) -> AsyncIterator[_PullRequestUpdater]:
+        if False:
+            yield
+        raise NotImplementedError()

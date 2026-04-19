@@ -7,6 +7,6 @@ from ._details import (
 )
 from ._enums import PullRequestStatus, ReviewState
 from ._metadata import registry
-from ._storage import CommonStorage, PostgresStorage
+from ._storage import CommonPullRequestUpdater, CommonStorage, PostgresStorage
 
 importlib.import_module("._pull_requests", __name__)
