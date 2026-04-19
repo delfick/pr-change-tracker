@@ -12,9 +12,9 @@ import sanic
 from hypercorn.asyncio import serve as hypercorn_serve
 from hypercorn.config import Config
 
-from . import progress, storage
-from .handlers import github as github_handlers
-from .handlers import sanic as sanic_handlers
+from pr_change_tracker import progress, storage
+from pr_change_tracker.handlers import github as github_handlers
+from pr_change_tracker.handlers import sanic as sanic_handlers
 
 
 @attrs.frozen

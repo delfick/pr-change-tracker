@@ -7,7 +7,8 @@ from typing import Protocol
 
 import attrs
 
-from ... import storage
+from pr_change_tracker import storage
+
 from . import _errors, _event, _processors
 
 

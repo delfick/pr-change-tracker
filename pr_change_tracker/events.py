@@ -10,8 +10,7 @@ from collections.abc import Callable
 import attrs
 
 from pr_change_tracker import progress, storage
-
-from .api import github as github_api
+from pr_change_tracker.api import github as github_api
 
 
 def _on_done(res: asyncio.Future[None]) -> None:

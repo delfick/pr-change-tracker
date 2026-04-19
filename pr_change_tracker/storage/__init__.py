@@ -11,4 +11,5 @@ from ._enums import PullRequestStatus, ReviewState
 from ._metadata import make_engine, registry
 from ._storage import CommonPullRequestUpdater, CommonStorage, PostgresStorage
 
+# Ensure pull request models are registered
 importlib.import_module("._pull_requests", __name__)
