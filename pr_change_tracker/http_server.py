@@ -7,10 +7,8 @@ from types import SimpleNamespace
 
 import attrs
 import sanic
-import sqlalchemy
 from hypercorn.asyncio import serve as hypercorn_serve
 from hypercorn.config import Config
-from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
 from . import protocols, storage
 from .handlers import github as github_handlers
@@ -19,7 +17,7 @@ from .handlers import sanic as sanic_handlers
 
 @attrs.frozen
 class ServerBase[T_SanicConfig: sanic.Config, T_SanicNamespace]:
-    postgres_url: str
+    storage: storage.CommonStorage
     github_webhook_secret: str
     debug_github_webhook_secret: str | None
     port: int
@@ -31,10 +29,7 @@ class ServerBase[T_SanicConfig: sanic.Config, T_SanicNamespace]:
 
         app = self.make_sanic_app()
 
-        app = self.configure_sanic(
-            app=app,
-            storage=storage.PostgresStorage(engine=self.make_database()),
-        )
+        app = self.configure_sanic(app=app)
 
         asyncio.run(self.serve_app(app=app, config=config))
 
@@ -44,11 +39,6 @@ class ServerBase[T_SanicConfig: sanic.Config, T_SanicNamespace]:
     def make_hypercorn_config(self) -> Config:
         return Config()
 
-    def make_database(self) -> AsyncEngine:
-        postgres_url = sqlalchemy.engine.url.make_url(self.postgres_url)
-        postgres_url = postgres_url.set(drivername="postgresql+psycopg")
-        return create_async_engine(postgres_url)
-
     def configure_hypercorn_config(self, config: Config) -> Config:
         config.accesslog = logging.getLogger("hypercorn.access")
         config.errorlog = logging.getLogger("hypercorn.access")
@@ -56,14 +46,11 @@ class ServerBase[T_SanicConfig: sanic.Config, T_SanicNamespace]:
         return config
 
     def configure_sanic(
-        self,
-        *,
-        app: sanic.Sanic[T_SanicConfig, T_SanicNamespace],
-        storage: storage.CommonStorage,
+        self, *, app: sanic.Sanic[T_SanicConfig, T_SanicNamespace]
     ) -> sanic.Sanic[T_SanicConfig, T_SanicNamespace]:
         github_handler = sanic_handlers.GithubWebhook(
             logger=self.logger,
-            process_incoming=github_handlers.IncomingProcessor(storage=storage).process,
+            process_incoming=github_handlers.IncomingProcessor(storage=self.storage).process,
             determine_expected_signature=functools.partial(
                 github_handlers.determine_expected_signature, self.github_webhook_secret
             ),
@@ -111,3 +98,22 @@ class Server(ServerBase[sanic.Config, SimpleNamespace]):
         )
         app.config.MOTD = False
         return app
+
+
+def make_server(
+    *,
+    postgres_url: str,
+    github_webhook_secret: str,
+    debug_github_webhook_secret: str | None,
+    port: int,
+    logger: protocols.Logger,
+) -> Server:
+    return Server(
+        logger=logger,
+        port=port,
+        github_webhook_secret=github_webhook_secret,
+        debug_github_webhook_secret=debug_github_webhook_secret,
+        storage=storage.PostgresStorage(
+            engine=storage.make_engine(postgres_url=postgres_url),
+        ),
+    )

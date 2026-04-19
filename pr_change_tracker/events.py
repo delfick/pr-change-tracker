@@ -5,9 +5,6 @@ import datetime
 import signal
 
 import attrs
-import sqlalchemy
-import sqlalchemy.engine.url
-from sqlalchemy.ext.asyncio import create_async_engine
 
 from pr_change_tracker import protocols, storage
 
@@ -22,12 +19,10 @@ def _on_done(res: asyncio.Future[None]) -> None:
 def make_postgres_event_processor(
     *, logger: protocols.Logger, postgres_url: str
 ) -> EventProcessor:
-    url = sqlalchemy.engine.url.make_url(postgres_url)
-    url = url.set(drivername="postgresql+psycopg")
     return EventProcessor(
         logger=logger,
         storage=storage.PostgresStorage(
-            engine=create_async_engine(url),
+            engine=storage.make_engine(postgres_url=postgres_url),
         ),
     )
 

@@ -181,7 +181,7 @@ def serve_http(
         postgres_url=postgres_url,
         port=port,
         dev_logging=dev_logging,
-        server_constructor=http_server.Server,
+        server_constructor=http_server.make_server,
     )
 
 
