@@ -1,7 +1,5 @@
-import functools
 import logging
 import os
-from collections.abc import Callable
 from typing import Protocol
 
 import click
@@ -38,6 +36,18 @@ class CLIOptions:
         "--dev-logging",
         is_flag=True,
         help="Print out the logs as human readable",
+    )
+    github_api_token_option = click.option(
+        "--github-api-token",
+        default="env:PR_CHANGE_TRACKER_GITHUB_API_TOKEN",
+        type=EnvSecret(),
+        help="Auth token for the github API",
+    )
+    github_api_requester_option = click.option(
+        "--github-api-requester",
+        default="env:PR_CHANGE_TRACKER_GITHUB_API_REQUESTER",
+        type=EnvSecret(),
+        help="To be added to the headers sent to the github API",
     )
     github_webhook_secret_option = click.option(
         "--github-webhook-secret",
@@ -140,18 +150,29 @@ def start_http_server(
 
 
 class EventProcessorConstructor(Protocol):
-    def __call__(self, *, logger: protocols.Logger, postgres_url: str) -> _WithServeForever: ...
+    def __call__(
+        self,
+        *,
+        logger: protocols.Logger,
+        postgres_url: str,
+        github_api_token: str,
+        github_api_requester: str,
+    ) -> _WithServeForever: ...
 
 
 def start_event_processor(
     *,
     postgres_url: str,
+    github_api_token: str,
+    github_api_requester: str,
     dev_logging: bool,
     processor_constructor: EventProcessorConstructor,
 ) -> None:
     logger = setup_logging(dev_logging)
     processor = processor_constructor(
         logger=logger,
+        github_api_token=github_api_token,
+        github_api_requester=github_api_requester,
         postgres_url=postgres_url,
     )
     processor.serve_forever()
@@ -188,10 +209,16 @@ def serve_http(
 @click.command
 @CLIOptions.postgres_url_option
 @CLIOptions.dev_logging_option
-def event_processor(*, postgres_url: str, dev_logging: bool) -> None:
+@CLIOptions.github_api_token_option
+@CLIOptions.github_api_requester_option
+def event_processor(
+    *, postgres_url: str, dev_logging: bool, github_api_token: str, github_api_requester: str
+) -> None:
     return start_event_processor(
         postgres_url=postgres_url,
         dev_logging=dev_logging,
+        github_api_token=github_api_token,
+        github_api_requester=github_api_requester,
         processor_constructor=events.make_postgres_event_processor,
     )
 

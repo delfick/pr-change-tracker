@@ -1,12 +1,17 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import datetime
+import functools
 import signal
+from collections.abc import Callable
 
 import attrs
 
 from pr_change_tracker import protocols, storage
+
+from .api import github as github_api
 
 
 def _on_done(res: asyncio.Future[None]) -> None:
@@ -17,12 +22,21 @@ def _on_done(res: asyncio.Future[None]) -> None:
 
 
 def make_postgres_event_processor(
-    *, logger: protocols.Logger, postgres_url: str
+    *,
+    logger: protocols.Logger,
+    postgres_url: str,
+    github_api_token: str,
+    github_api_requester: str,
 ) -> EventProcessor:
     return EventProcessor(
         logger=logger,
         storage=storage.PostgresStorage(
             engine=storage.make_engine(postgres_url=postgres_url),
+        ),
+        manage_github_api=functools.partial(
+            github_api.GithubAPI.create,
+            token=github_api_token,
+            requester=github_api_requester,
         ),
     )
 
@@ -32,12 +46,21 @@ class EventProcessor:
     _logger: protocols.Logger
 
     _storage: storage.CommonStorage
+    _manage_github_api: Callable[
+        [], contextlib.AbstractAsyncContextManager[github_api.CommonGithubAPI]
+    ]
+
     _max_concurrent_pr_updates: int = attrs.field(default=4)
 
     def serve_forever(self) -> None:
-        asyncio.run(self._serve())
 
-    async def _serve(self) -> None:
+        async def _run() -> None:
+            async with self._manage_github_api() as gh:
+                await self._serve(gh)
+
+        asyncio.run(_run())
+
+    async def _serve(self, gh: github_api.CommonGithubAPI) -> None:
         shutdown_event = asyncio.Event()
         do_next_process_event = asyncio.Event()
         do_next_process_event.set()
@@ -59,7 +82,7 @@ class EventProcessor:
                 break
 
             try:
-                await self._tick()
+                await self._tick(gh)
             except:
                 self._logger.exception("Failed to run the tick")
 
@@ -75,7 +98,7 @@ class EventProcessor:
             loop.call_later(next_tick.total_seconds(), do_next_process_event.set)
             last_checked = now
 
-    async def _tick(self) -> None:
+    async def _tick(self, gh: github_api.CommonGithubAPI) -> None:
         success = 0
         errored = 0
 
@@ -88,7 +111,7 @@ class EventProcessor:
             async with limit:
                 async with pr.update() as (details, latest_status):
                     try:
-                        await self._update_pr(details=details, latest_status=latest_status)
+                        await self._update_pr(gh=gh, details=details, latest_status=latest_status)
                         success += 1
                     except:
                         errored += 1
@@ -107,7 +130,11 @@ class EventProcessor:
     async def _update_pr(
         self,
         *,
+        gh: github_api.CommonGithubAPI,
         details: storage.PullRequestDetails,
         latest_status: storage.PullRequestStatusChangeDetails,
     ) -> None:
+        # current_details = await gh.for_pull_request(
+        #     repo_name=details.repo_name, org=details.org, pr_number=details.pr_number
+        # ).current_state()
         pass
