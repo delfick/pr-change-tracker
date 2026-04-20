@@ -11,9 +11,7 @@ from pr_change_tracker import storage
 @attrs.frozen
 class _PullRequestUpdater(storage.CommonPullRequestUpdater):
     @contextlib.asynccontextmanager
-    async def update(
-        self,
-    ) -> AsyncGenerator[tuple[storage.PullRequestDetails, storage.PullRequestStatusChangeDetails]]:
+    async def update(self) -> AsyncGenerator[storage.PullRequestUpdateDetails]:
         if False:
             yield
 

@@ -108,9 +108,9 @@ class EventProcessor:
             nonlocal errored
 
             async with limit:
-                async with pr.update() as (details, latest_status):
+                async with pr.update() as details:
                     try:
-                        await self._update_pr(gh=gh, details=details, latest_status=latest_status)
+                        await self._update_pr(gh=gh, details=details)
                         success += 1
                     except:
                         errored += 1
@@ -132,10 +132,47 @@ class EventProcessor:
         self,
         *,
         gh: github_api.CommonGithubAPI,
-        details: storage.PullRequestDetails,
-        latest_status: storage.PullRequestStatusChangeDetails,
+        details: storage.PullRequestUpdateDetails,
     ) -> None:
-        # current_details = await gh.for_pull_request(
-        #     repo_name=details.repo_name, org=details.org, pr_number=details.pr_number
-        # ).current_state()
-        pass
+        current_details = await gh.for_pull_request(
+            repo_name=details.repo_name, org=details.org, pr_number=details.pr_number
+        ).current_state()
+
+        if not any(current_details.approves):
+            return
+
+        approvers = {approve.reviewer.id for approve in current_details.approves}
+        committers = {commit.committer.id for commit in current_details.commits}
+
+        lines: list[str] = [
+            "Discovered changes since latest approve",
+        ]
+
+        if not any(approvers - committers):
+            # Would invalidate all approves here
+            lines.append("* Found no approvers that didn't also commit code to the pull request")
+
+        now = datetime.datetime.now()
+        for approve in current_details.approves:
+            if (now - approve.submitted_at) > datetime.timedelta(days=7):
+                # Would invalidate this approve
+                lines.append(f"* Latest approve from {approve.reviewer.login} is over a week old")
+
+            previous_base = details.commit_pairs.head_sha_to_ref.get(approve.approved_sha)
+            if previous_base is None:
+                lines.append(
+                    f"* Cannot calculate diff since {approve.reviewer.login} approved PR at {approve.approved_sha}"
+                )
+            else:
+                lines.append(
+                    f"* Changes since {approve.reviewer.login} approved PR at {approve.approved_sha}"
+                )
+                lines.append(
+                    f"  from {previous_base}..{approve.approved_sha} to {current_details.base_sha}..{current_details.head_sha}"
+                )
+                lines.append(
+                    f"  ({details.commit_pairs.base_sha_to_ref[previous_base]}..{details.commit_pairs.head_sha_to_ref[approve.approved_sha]} to {current_details.base_ref}..{current_details.head_ref})"
+                )
+
+        # This is where we'd add a comment to a PR if we can't find an existing comment with the same content
+        print("\n".join(lines))  # noqa: T201

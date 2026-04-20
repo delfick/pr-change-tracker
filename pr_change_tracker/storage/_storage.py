@@ -14,18 +14,12 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from . import _details, _enums, _pull_requests
 
 
-class NoStateStoredForPullRequest(Exception):
-    pass
-
-
 class CommonPullRequestUpdater(abc.ABC):
     @abc.abstractmethod
     @contextlib.asynccontextmanager
     def update(
         self,
-    ) -> AsyncGenerator[
-        tuple[_details.PullRequestDetails, _details.PullRequestStatusChangeDetails]
-    ]: ...
+    ) -> AsyncGenerator[_details.PullRequestUpdateDetails]: ...
 
 
 class CommonStorage(abc.ABC):
@@ -62,40 +56,36 @@ class _PostgresPullRequestUpdater(CommonPullRequestUpdater):
     @contextlib.asynccontextmanager
     async def update(
         self,
-    ) -> AsyncGenerator[
-        tuple[_details.PullRequestDetails, _details.PullRequestStatusChangeDetails]
-    ]:
-        details = _details.PullRequestDetails(
-            pr_number=self._pr.pr_number,
-            repo_name=self._pr.repo_name,
-            org=self._pr.org,
-            branch_name=self._pr.branch_name,
-            updated_at=self._latest_updated_at,
-        )
+    ) -> AsyncGenerator[_details.PullRequestUpdateDetails]:
+        commit_pairs: list[_details.CommitPair] = []
 
         async with AsyncSession(self._engine) as session, session.begin():
-            latest = await session.scalar(
-                sqlalchemy.select(_pull_requests.PullRequestState)
-                .where(_pull_requests.PullRequestState.pr == self._pr)
-                .order_by(_pull_requests.PullRequestState.pr_updated_at)
-                .limit(1)
+            states = await session.scalars(
+                sqlalchemy.select(_pull_requests.PullRequestState).where(
+                    _pull_requests.PullRequestState.pr == self._pr
+                )
             )
-            if latest is None:
-                raise NoStateStoredForPullRequest
+            for state in states:
+                commit_pairs.append(
+                    _details.CommitPair(
+                        head_ref=state.head_ref,
+                        head_sha=state.head_sha,
+                        base_ref=state.base_ref,
+                        base_sha=state.base_sha,
+                    )
+                )
 
-            latest_status_change = _details.PullRequestStatusChangeDetails(
-                status=latest.status,
-                occurred_at=latest.pr_updated_at,
-                head_ref=latest.head_ref,
-                head_sha=latest.head_sha,
-                base_ref=latest.base_ref,
-                base_sha=latest.base_sha,
-                sender_id=latest.sender_id,
-                sender_login=latest.sender_login,
+            details = _details.PullRequestUpdateDetails(
+                pr_number=self._pr.pr_number,
+                repo_name=self._pr.repo_name,
+                org=self._pr.org,
+                branch_name=self._pr.branch_name,
+                updated_at=self._latest_updated_at,
+                commit_pairs=_details.CommitPairs.from_pairs(commit_pairs),
             )
 
             try:
-                yield (details, latest_status_change)
+                yield details
             finally:
                 await session.execute(
                     sqlalchemy.delete(_pull_requests.PullRequestChangedEvent).where(

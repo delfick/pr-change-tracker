@@ -6,6 +6,7 @@ from ._details import (
     PullRequestDetails,
     PullRequestReviewChangeDetails,
     PullRequestStatusChangeDetails,
+    PullRequestUpdateDetails,
 )
 from ._enums import PullRequestStatus, ReviewState
 from ._metadata import make_engine, registry

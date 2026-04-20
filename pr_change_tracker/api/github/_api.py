@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import abc
+import collections
 import contextlib
+import datetime
 import enum
 from collections.abc import AsyncGenerator, AsyncIterator, Sequence
 from typing import Any, Self
@@ -12,19 +14,21 @@ import gidgethub.abc
 import gidgethub.aiohttp
 
 
+class UserHadNoDatabaseID(Exception):
+    pass
+
+
 @attrs.frozen
 class User:
-    id: int | None
+    id: int
     login: str
 
     @classmethod
     def from_graphql_data(cls, data: dict[str, object]) -> User:
-        database_id: int | None = None
-        raw_database_id = data.get("databaseId")
-        if raw_database_id is not None:
-            assert isinstance(raw_database_id, int)
-            database_id = raw_database_id
+        if (database_id := data.get("databaseId")) is None:
+            raise UserHadNoDatabaseID
 
+        assert isinstance(database_id, int)
         return User(login=str(data["login"]), id=database_id)
 
 
@@ -37,6 +41,7 @@ class Commit:
 
 @attrs.frozen
 class Approve:
+    submitted_at: datetime.datetime
     reviewer: User
     approved_sha: str
 
@@ -54,7 +59,9 @@ class CurrentPullRequestState:
     commits: Sequence[Commit]
     approves: Sequence[Approve]
     head_sha: str
+    head_ref: str
     base_sha: str
+    base_ref: str
 
 
 class CommonGithubAPI(abc.ABC):
@@ -83,9 +90,9 @@ class GithubPullRequest(CommonGithubPullRequest):
                 query ($owner: String!, $repo: String!, $number: Int!) {
                     repository(owner: $owner, name: $repo) {
                         pullRequest(number: $number) {
-                            baseRef { target { oid } },
-                            headRef { target { oid } },
-                            author { login, ... on User { databaseId }},
+                            baseRef { name, target { oid } },
+                            headRef { name, target { oid } },
+                            author { login, ... on User { databaseId }, ... on Bot { databaseId } }
                             state,
                             commits(first: 100, after: null) {
                                 nodes {
@@ -112,11 +119,13 @@ class GithubPullRequest(CommonGithubPullRequest):
                             }
                             reviews(first: 100, after: null) {
                                 nodes {
+                                    state
+                                    submittedAt
                                     commit {
                                         oid
                                     }
                                     author {
-                                        login, ... on User { databaseId }
+                                        login, ... on User { databaseId }, ... on Bot { databaseId }
                                     }
                                 }
                                 pageInfo {
@@ -142,18 +151,24 @@ class GithubPullRequest(CommonGithubPullRequest):
         ):
             commits.append(commit)
 
-        approves: list[Approve] = []
+        approves_by_reviewer: dict[int, list[Approve]] = collections.defaultdict(list)
         async for approve in self._interpret_approved_reviews(
             end_cursor=str(pr["reviews"]["pageInfo"]["endCursor"]),
             has_next_page=bool(pr["reviews"]["pageInfo"]["hasNextPage"]),
             reviews=pr["reviews"]["nodes"],
         ):
-            approves.append(approve)
+            approves_by_reviewer[approve.reviewer.id].append(approve)
+
+        approves: list[Approve] = []
+        for _, aps in approves_by_reviewer.items():
+            approves.append(sorted(aps, key=lambda ap: ap.submitted_at)[-1])
 
         return CurrentPullRequestState(
             author=User.from_graphql_data(pr["author"]),
             head_sha=str(pr["headRef"]["target"]["oid"]),
+            head_ref=str(pr["headRef"]["name"]),
             base_sha=str(pr["baseRef"]["target"]["oid"]),
+            base_ref=str(pr["baseRef"]["name"]),
             state=PullRequestState(pr["state"]),
             commits=commits,
             approves=approves,
@@ -223,6 +238,7 @@ class GithubPullRequest(CommonGithubPullRequest):
         for review in reviews:
             if str(review["state"]) == "APPROVED":
                 yield Approve(
+                    submitted_at=datetime.datetime.fromisoformat(str(review["submittedAt"])),
                     approved_sha=str(review["commit"]["oid"]),
                     reviewer=User.from_graphql_data(review["author"]),
                 )
@@ -237,11 +253,12 @@ class GithubPullRequest(CommonGithubPullRequest):
                                 reviews(first: 100, after: $after) {
                                     nodes {
                                         state,
+                                        submittedAt
                                         commit {
                                             oid
                                         }
                                         author {
-                                            login, ... on User { databaseId }
+                                            login, ... on User { databaseId }, ... on Bot { databaseId }
                                         }
                                     }
                                     pageInfo {
